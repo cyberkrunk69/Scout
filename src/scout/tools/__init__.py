@@ -14,13 +14,95 @@ This package contains extracted tool implementations organized by domain:
 Each submodule exports tool functions that can be called directly.
 """
 
-from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+import functools
+import time
+from typing import Any, Callable
+
+from scout.audit import get_audit
+from scout.cache import simple_cache as _simple_cache
+
+from .anonymizer import Anonymizer, AnonymizerTool, get_tool, list_tools
+
+
+# Re-export simple_cache from scout.cache
+simple_cache = _simple_cache
+
+
+def log_tool_invocation(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Decorator that logs tool invocations to the audit log.
+
+    Logs execution time, success/failure status, and any errors.
+    Works with both sync and async functions.
+    """
+
+    @functools.wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        audit = get_audit()
+        start = time.time()
+        try:
+            result = await func(*args, **kwargs)
+            duration = time.time() - start
+            audit.log(
+                "tool_invocation",
+                tool=func.__name__,
+                duration_ms=int(duration * 1000),
+                success=True,
+            )
+            return result
+        except Exception as e:
+            duration = time.time() - start
+            audit.log(
+                "tool_invocation",
+                tool=func.__name__,
+                duration_ms=int(duration * 1000),
+                success=False,
+                error=str(e),
+            )
+            raise
+
+    # Handle sync functions
+    @functools.wraps(func)
+    def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+        audit = get_audit()
+        start = time.time()
+        try:
+            result = func(*args, **kwargs)
+            duration = time.time() - start
+            audit.log(
+                "tool_invocation",
+                tool=func.__name__,
+                duration_ms=int(duration * 1000),
+                success=True,
+            )
+            return result
+        except Exception as e:
+            duration = time.time() - start
+            audit.log(
+                "tool_invocation",
+                tool=func.__name__,
+                duration_ms=int(duration * 1000),
+                success=False,
+                error=str(e),
+            )
+            raise
+
+    # Return appropriate wrapper based on function type
+    import inspect
+
+    if inspect.iscoroutinefunction(func):
+        return wrapper
+    else:
+        return sync_wrapper
 
 
 # =============================================================================
 # Tool Metadata for Execution Engine (Phase 3)
 # =============================================================================
+
+from enum import Enum
+from typing import TYPE_CHECKING, Optional
+
 
 class CostTier(str, Enum):
     """Cost tier for tool budgeting."""
@@ -474,6 +556,14 @@ __all__ = [
     # Batch tools
     "scout_batch",
     "scout_run",
+    # Anonymizer tools
+    "Anonymizer",
+    "AnonymizerTool",
+    "get_tool",
+    "list_tools",
+    # Decorators
+    "simple_cache",
+    "log_tool_invocation",
 ]
 
 
@@ -558,4 +648,3 @@ def register_all_tools(mcp: "FastMCP") -> None:
 
 def get_tools_minimal():
     return [{"name": t, "desc": ""} for t in get_tools()]
-
