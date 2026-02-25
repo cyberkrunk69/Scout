@@ -3,6 +3,11 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 import logging
 
+from scout.config.defaults import (
+    STEP_DEFAULT_MAX_RETRIES,
+    STEP_DEFAULT_TIMEOUT_SECONDS,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,8 +38,8 @@ class StructuredStep:
     success_conditions: Optional[Dict[str, Any]] = None
     success_condition_type: str = "programmatic"
     retry_count: int = 0
-    max_retries: int = 2
-    timeout_seconds: int = 300
+    max_retries: int = STEP_DEFAULT_MAX_RETRIES
+    timeout_seconds: int = STEP_DEFAULT_TIMEOUT_SECONDS
     parallel_group: Optional[str] = None
     rollback_on_fail: bool = True
     input_prompt: Optional[str] = None
@@ -57,16 +62,23 @@ class StructuredPlan:
 
 @dataclass
 class StepResult:
-    step_id: int
-    success: bool
+    """Result of executing a single step (unified for both general and web execution)."""
+    step_id: int = 0  # For general execution (0 as default)
+    step_index: int = 0  # For web execution (0 as default)
+    action: str = ""  # For web execution
+    success: bool = False
     output: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
-    cost: float = 0.0
-    duration_ms: int = 0
+    failure_reason: Optional[str] = None  # Detailed reason for failure (web)
+    retry_count: int = 0  # Number of retries (web)
+    cost: float = 0.0  # Cost in USD
+    duration_ms: int = 0  # Duration in milliseconds
+    target: Optional[str] = None  # Target element for the action (web)
 
 
 @dataclass
 class ExecutionResult:
+    """Result of executing a complete plan (alias for backward compatibility)."""
     steps_completed: int
     steps_failed: int
     total_cost: float
@@ -142,20 +154,6 @@ class PlanContext:
     cookies: Optional[Dict] = None
     session_id: Optional[str] = None
     plan_id: Optional[str] = None
-
-
-@dataclass
-class StepResult:
-    """Result of executing a single web step."""
-    step_index: int
-    action: str
-    success: bool
-    output: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    failure_reason: Optional[str] = None  # Detailed reason for failure
-    retry_count: int = 0
-    cost: float = 0.0  # Cost in USD from browser agent
-    target: Optional[str] = None  # Target element for the action
 
 
 @dataclass

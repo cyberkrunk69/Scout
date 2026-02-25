@@ -2,7 +2,41 @@
 
 This module centralizes all default configuration values (magic numbers)
 into a single location for easy maintenance and modification.
+
+Usage:
+    # For default constants:
+    from scout.config import (
+        BUDGET_COST_PER_MILLION_8B,
+        RETRY_BASE_DELAY,
+        HOTSPOT_WEIGHT_CHURN,
+    )
+
+    # For ScoutConfig class (deprecated, use scout.app_config):
+    from scout.config import ScoutConfig
+    config = ScoutConfig()
 """
+
+import warnings
+
+# Re-export ScoutConfig and get_global_semaphore from app_config for backward compatibility
+# TODO: Remove this warning after v0.2.0
+warnings.warn(
+    "Importing ScoutConfig and get_global_semaphore from scout.config is deprecated. "
+    "Use scout.app_config instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+from scout.app_config import (
+    ScoutConfig,
+    get_global_semaphore,
+    HARD_MAX_HOURLY_BUDGET,
+    HARD_MAX_COST_PER_EVENT,
+    HARD_MAX_AUTO_ESCALATIONS,
+    TriggerConfig,
+    DEFAULT_CONFIG,
+    EnvLoader,
+)
 
 from scout.config.defaults import (
     # Budget defaults
@@ -86,6 +120,31 @@ from scout.config.defaults import (
     # Sliding window defaults
     SLIDING_WINDOW_REQUESTS_PER_MINUTE,
     SLIDING_WINDOW_TOKENS_PER_MINUTE,
+
+    # Navigation defaults
+    NAV_DEFAULT_CONFIDENCE,
+    NAV_FALLBACK_CONFIDENCE,
+    NAV_COST_8B_ESTIMATE,
+    NAV_COST_70B_ESTIMATE,
+    TASK_HIGH_CONFIDENCE_THRESHOLD,
+    TASK_LOW_CONFIDENCE_THRESHOLD,
+
+    # Execution & Plans defaults
+    EXECUTOR_TIMEOUT_SECONDS,
+    EXECUTOR_ESTIMATED_COST,
+    EXECUTOR_MAX_BUDGET,
+    EXECUTOR_DEFAULT_MAX_RETRIES,
+    EXECUTOR_DEFAULT_TIMEOUT_SECONDS,
+    BATCH_MAX_DEPTH,
+    BATCH_DEFAULT_TIMEOUT,
+    PLAN_LOCK_TIMEOUT_SECONDS,
+    PLAN_STALE_LOCK_HOURS,
+    PLAN_CRITICAL_ACTION_TYPES,
+    PLAN_ARCHIVE_DAYS,
+    PLAN_DELETE_DAYS,
+    PLAN_CACHE_DAYS,
+    STEP_DEFAULT_TIMEOUT_SECONDS,
+    STEP_DEFAULT_MAX_RETRIES,
 )
 
 __all__ = [
@@ -161,4 +220,36 @@ __all__ = [
     # Sliding window
     "SLIDING_WINDOW_REQUESTS_PER_MINUTE",
     "SLIDING_WINDOW_TOKENS_PER_MINUTE",
+    # Navigation
+    "NAV_DEFAULT_CONFIDENCE",
+    "NAV_FALLBACK_CONFIDENCE",
+    "NAV_COST_8B_ESTIMATE",
+    "NAV_COST_70B_ESTIMATE",
+    "TASK_HIGH_CONFIDENCE_THRESHOLD",
+    "TASK_LOW_CONFIDENCE_THRESHOLD",
+    # Execution & Plans
+    "EXECUTOR_TIMEOUT_SECONDS",
+    "EXECUTOR_ESTIMATED_COST",
+    "EXECUTOR_MAX_BUDGET",
+    "EXECUTOR_DEFAULT_MAX_RETRIES",
+    "EXECUTOR_DEFAULT_TIMEOUT_SECONDS",
+    "BATCH_MAX_DEPTH",
+    "BATCH_DEFAULT_TIMEOUT",
+    "PLAN_LOCK_TIMEOUT_SECONDS",
+    "PLAN_STALE_LOCK_HOURS",
+    "PLAN_CRITICAL_ACTION_TYPES",
+    "PLAN_ARCHIVE_DAYS",
+    "PLAN_DELETE_DAYS",
+    "PLAN_CACHE_DAYS",
+    "STEP_DEFAULT_TIMEOUT_SECONDS",
+    "STEP_DEFAULT_MAX_RETRIES",
+    # Re-exports from app_config
+    "ScoutConfig",
+    "get_global_semaphore",
+    "HARD_MAX_HOURLY_BUDGET",
+    "HARD_MAX_COST_PER_EVENT",
+    "HARD_MAX_AUTO_ESCALATIONS",
+    "TriggerConfig",
+    "DEFAULT_CONFIG",
+    "EnvLoader",
 ]

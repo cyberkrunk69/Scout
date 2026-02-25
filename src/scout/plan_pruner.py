@@ -16,9 +16,7 @@ from scout.plan_io import (
     BY_MODEL_DIR,
     list_plans,
 )
-
-# TODO: Import similarity from vivarium or implement in scout
-# from vivarium.scout.similarity import find_duplicates
+from scout.similarity import find_duplicates
 
 COMPRESSION_AGE_DAYS = 30
 MAX_TOTAL_PLANS = 1000

@@ -174,3 +174,50 @@ TOKEN_ESTIMATOR_MODEL_DEFAULT = "gpt-3.5-turbo"
 
 SLIDING_WINDOW_REQUESTS_PER_MINUTE = 60
 SLIDING_WINDOW_TOKENS_PER_MINUTE = 100_000  # 100k TPM default
+
+
+# =============================================================================
+# Navigation Defaults
+# =============================================================================
+
+# Default confidence levels for navigation suggestions
+NAV_DEFAULT_CONFIDENCE = 85  # Default confidence when LLM doesn't provide one
+NAV_FALLBACK_CONFIDENCE = 90  # Fallback confidence for heuristic results
+
+# Cost estimates for navigation
+NAV_COST_8B_ESTIMATE = 0.0002  # Estimated cost for 8B model navigation
+NAV_COST_70B_ESTIMATE = 0.0009  # Estimated cost for 70B model navigation
+
+# Task routing confidence thresholds (0.0-1.0)
+TASK_HIGH_CONFIDENCE_THRESHOLD = 0.9
+TASK_LOW_CONFIDENCE_THRESHOLD = 0.7
+
+
+# =============================================================================
+# Execution & Plans Defaults
+# =============================================================================
+
+# Executor defaults
+EXECUTOR_TIMEOUT_SECONDS = 300  # Default timeout for step execution
+EXECUTOR_ESTIMATED_COST = 0.001  # Rough estimate per step
+EXECUTOR_MAX_BUDGET = 0.10  # Default max budget for a plan
+EXECUTOR_DEFAULT_MAX_RETRIES = 2
+EXECUTOR_DEFAULT_TIMEOUT_SECONDS = 300
+
+# Batch processing defaults
+BATCH_MAX_DEPTH = 3  # Maximum nesting depth for sub-batches
+BATCH_DEFAULT_TIMEOUT = 600  # Default timeout for batch execution (seconds)
+
+# Plan state defaults
+PLAN_LOCK_TIMEOUT_SECONDS = 30  # Lock acquisition timeout
+PLAN_STALE_LOCK_HOURS = 1  # Stale lock threshold
+PLAN_CRITICAL_ACTION_TYPES = ["deploy", "delete", "modify_production"]  # High-risk actions
+
+# Plan cleanup defaults
+PLAN_ARCHIVE_DAYS = 7  # Archive completed plans older than this
+PLAN_DELETE_DAYS = 30  # Delete archived plans older than this
+PLAN_CACHE_DAYS = 30  # Default cache duration for plan store
+
+# Step execution defaults
+STEP_DEFAULT_TIMEOUT_SECONDS = 300
+STEP_DEFAULT_MAX_RETRIES = 2

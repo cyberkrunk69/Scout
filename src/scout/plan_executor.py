@@ -1,6 +1,6 @@
 """Plan executor for web automation tasks.
 
-This module provides the PlanExecutor class that coordinates execution of
+This module provides the WebPlanExecutor class that coordinates execution of
 multi-step web automation plans using the browser agent.
 """
 
@@ -38,7 +38,7 @@ def _calculate_backoff_delay(attempt: int, base_delay: float, max_delay: float, 
     return delay
 
 
-class PlanExecutor:
+class WebPlanExecutor:
     """Executes web task plans using the browser agent.
 
     Execution Traces:
@@ -62,7 +62,7 @@ class PlanExecutor:
         max_delay: float = 60.0,
         jitter_factor: float = 0.1,
     ):
-        """Initialize the PlanExecutor.
+        """Initialize the WebPlanExecutor.
 
         Args:
             browser_agent_tool: Callable that executes browser actions

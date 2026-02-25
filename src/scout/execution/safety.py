@@ -1,8 +1,9 @@
 """Safety guards for primitive tools."""
 
+import logging
+import time
 from pathlib import Path
 from typing import List, Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +21,44 @@ class SafetyGuard:
         self.dry_run = dry_run
         
     def validate_path(self, path: str) -> Path:
-        """Ensure path is within workspace boundary."""
+        """Ensure path is within workspace boundary.
+
+        Uses samefile() to properly handle symlinks and prevent
+        path traversal attacks.
+        """
         resolved = (self.workspace_root / path).resolve()
-        if not str(resolved).startswith(str(self.workspace_root)):
+
+        # Check if resolved path is within workspace_root
+        # Use try/except because samefile() can raise OSError for various reasons
+        try:
+            # Resolve workspace_root to handle any symlinks in it too
+            workspace = self.workspace_root.resolve()
+
+            # Check if resolved is the same as workspace or is a subdirectory
+            if resolved == workspace:
+                return resolved
+
+            # Check each parent - if workspace is a parent of resolved, it's safe
+            for parent in resolved.parents:
+                if parent.samefile(workspace):
+                    return resolved
+                # Also check if parent equals workspace (edge case)
+                if parent == workspace:
+                    return resolved
+
+            # If we get here, resolved is outside workspace
             raise SafetyViolation(f"Path {path} outside workspace boundary")
-        return resolved
+        except FileNotFoundError:
+            # Workspace directory doesn't exist yet - fall back to string prefix check
+            # This handles the case where we're validating paths in a new workspace
+            resolved_str = str(resolved)
+            workspace_str = str(self.workspace_root)
+            if resolved_str.startswith(workspace_str + "/") or resolved_str == workspace_str:
+                return resolved
+            raise SafetyViolation(f"Path {path} outside workspace boundary")
+        except OSError as e:
+            # Could not resolve paths (e.g., broken symlinks)
+            raise SafetyViolation(f"Could not validate path {path}: {e}")
         
     def validate_command(self, cmd: str, whitelist: List[str]) -> bool:
         """Check command against whitelist."""
@@ -270,16 +304,41 @@ async def scout_check_command(command: str) -> dict:
 
 
 async def scout_wait(seconds: int = None, condition: str = None, condition_params: dict = None, max_wait: int = 60) -> dict:
-    """Wait until condition is met."""
+    """Wait until condition is met or timeout.
+
+    Args:
+        seconds: Fixed wait time in seconds
+        condition: Condition type to wait for ("file_exists", "file_contains", etc.)
+        condition_params: Parameters for the condition
+        max_wait: Maximum wait time in seconds
+
+    Returns:
+        Dict with success status and condition_met flag
+    """
     import asyncio
-    import time
-    
+
     if seconds:
         await asyncio.sleep(min(seconds, max_wait))
         return {"success": True, "elapsed": min(seconds, max_wait), "condition_met": True}
-    
-    # TODO: Implement condition-based waiting
-    return {"success": True, "elapsed": 0, "condition_met": False, "note": "condition waiting not implemented"}
+
+    # Condition-based waiting
+    if condition and condition_params:
+        start_time = time.time()
+        while time.time() - start_time < max_wait:
+            # Check the condition
+            result = await scout_condition(condition, condition_params)
+            if result.get("success") and result.get("result"):
+                elapsed = time.time() - start_time
+                return {"success": True, "elapsed": elapsed, "condition_met": True}
+
+            # Wait before next check
+            await asyncio.sleep(1)
+
+        # Timeout reached
+        elapsed = time.time() - start_time
+        return {"success": True, "elapsed": elapsed, "condition_met": False, "note": "timeout"}
+
+    return {"success": True, "elapsed": 0, "condition_met": False, "note": "no condition provided"}
 
 
 async def scout_condition(type: str, params: dict) -> dict:

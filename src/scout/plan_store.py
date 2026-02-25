@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from scout.config.defaults import PLAN_CACHE_DAYS
 from scout.trust.store import TrustStore
 
 logger = logging.getLogger(__name__)
@@ -33,9 +34,21 @@ class PlanStore(TrustStore):
     """
     
     # Default cache duration in days
-    DEFAULT_CACHE_DAYS = 30
+    DEFAULT_CACHE_DAYS = PLAN_CACHE_DAYS
     # Minimum success count to avoid deletion
     MIN_SUCCESS_COUNT = 1
+
+    # Allowed column names for SQL queries (prevents SQL injection)
+    ALLOWED_COLUMNS = frozenset({
+        "plan_id",
+        "goal",
+        "steps_json",
+        "url_pattern",
+        "success_count",
+        "failure_count",
+        "last_run",
+        "created_at",
+    })
     
     async def initialize(self) -> None:
         """Initialize the plan store schema.
@@ -253,12 +266,16 @@ class PlanStore(TrustStore):
             success: Whether the plan execution succeeded
         """
         column = "success_count" if success else "failure_count"
-        
+
+        # Validate column against whitelist (prevents SQL injection)
+        if column not in ALLOWED_COLUMNS:
+            raise ValueError(f"Invalid column name: {column}")
+
         async with self._lock:
             conn = await self._get_connection()
-            
+
             await conn.execute(f"""
-                UPDATE plans 
+                UPDATE plans
                 SET {column} = {column} + 1,
                     last_run = ?
                 WHERE plan_id = ?

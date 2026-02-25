@@ -27,6 +27,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from scout.config.defaults import (
+    PLAN_LOCK_TIMEOUT_SECONDS,
+    PLAN_STALE_LOCK_HOURS,
+    PLAN_ARCHIVE_DAYS,
+    PLAN_DELETE_DAYS,
+)
+
 logger = logging.getLogger(__name__)
 
 # Constants
@@ -37,9 +44,27 @@ PLAN_STATE_DIR = Path(".scout/plans")
 def _get_lock_config() -> dict:
     """Get lock configuration from environment or defaults."""
     return {
-        "timeout": int(os.environ.get("SCOUT_PLAN_LOCK_TIMEOUT", 30)),
-        "stale_hours": int(os.environ.get("SCOUT_PLAN_STALE_LOCK_HOURS", 1)),
+        "timeout": int(os.environ.get("SCOUT_PLAN_LOCK_TIMEOUT", PLAN_LOCK_TIMEOUT_SECONDS)),
+        "stale_hours": int(os.environ.get("SCOUT_PLAN_STALE_LOCK_HOURS", PLAN_STALE_LOCK_HOURS)),
     }
+
+
+def _acquire_lock_atomic(lock_dir: Path) -> bool:
+    """Atomically create a lock directory using os.open with O_CREAT | O_EXCL.
+    
+    This is the safest way to atomically create a directory - it will fail
+    if the directory already exists, with no window for race conditions.
+    We use mkdir since that's atomic on POSIX systems.
+    """
+    try:
+        # os.mkdir is atomic on POSIX - create the lock directory
+        os.mkdir(str(lock_dir))
+        return True
+    except FileExistsError:
+        return False
+    except OSError as e:
+        logger.warning("lock_creation_error", error=str(e))
+        return False
 
 
 def acquire_lock(plan_id: str, timeout: int = None) -> bool:
@@ -59,30 +84,41 @@ def acquire_lock(plan_id: str, timeout: int = None) -> bool:
 
     start_time = time.time()
     while time.time() - start_time < lock_timeout:
-        try:
-            # exist_ok=False is CRITICAL - this is what makes it atomic
-            lock_path.mkdir(parents=True, exist_ok=False)
-            # Write PID to separate file inside (keeps dir as atomic indicator)
-            (lock_path / "pid").write_text(str(os.getpid()))
-            (lock_path / "timestamp").write_text(str(time.time()))
-            (lock_path / "config").write_text(json.dumps(config))
-            logger.debug("lock_acquired", plan_id=plan_id, timeout=lock_timeout)
-            return True
-        except FileExistsError:
-            # Check if stale (older than configured threshold)
+        # First, try to acquire the lock atomically
+        if _acquire_lock_atomic(lock_path):
+            # Write metadata to files inside the lock directory
             try:
-                if not lock_path.exists():
-                    continue  # Was removed by someone else, retry
-                mtime = lock_path.stat().st_mtime
-                if time.time() - mtime > stale_seconds:
-                    # Stale - try to remove and retry
-                    shutil.rmtree(lock_path)
+                (lock_path / "pid").write_text(str(os.getpid()))
+                (lock_path / "timestamp").write_text(str(time.time()))
+                (lock_path / "config").write_text(json.dumps(config))
+                logger.debug("lock_acquired", plan_id=plan_id, timeout=lock_timeout)
+                return True
+            except Exception as e:
+                # Failed to write metadata - release and retry
+                try:
+                    os.rmdir(str(lock_path))
+                except Exception:
+                    pass
+                logger.warning("lock_metadata_error", plan_id=plan_id, error=str(e))
+
+        # Lock exists - check if stale
+        try:
+            if not lock_path.exists():
+                continue  # Was removed by someone else, retry
+            mtime = lock_path.stat().st_mtime
+            if time.time() - mtime > stale_seconds:
+                # Stale - try to atomically remove and retry
+                try:
+                    shutil.rmtree(str(lock_path))
                     # Re-verify lock_path doesn't exist after removal
                     if not lock_path.exists():
+                        logger.debug("stale_lock_removed", plan_id=plan_id)
                         continue
-            except Exception:
-                pass
-            time.sleep(0.1)  # Retry with backoff
+                except Exception:
+                    pass  # Another process got it, will retry
+        except Exception:
+            pass
+        time.sleep(0.1)  # Retry with backoff
 
     logger.warning("lock_acquire_timeout", plan_id=plan_id, timeout=lock_timeout)
     return False
@@ -328,8 +364,8 @@ class PlanStateManager:
         import time as time_module
 
         # Get configuration
-        archive_days = int(os.environ.get("SCOUT_PLAN_ARCHIVE_DAYS", 7))
-        delete_days = int(os.environ.get("SCOUT_PLAN_DELETE_DAYS", 30))
+        archive_days = int(os.environ.get("SCOUT_PLAN_ARCHIVE_DAYS", PLAN_ARCHIVE_DAYS))
+        delete_days = int(os.environ.get("SCOUT_PLAN_DELETE_DAYS", PLAN_DELETE_DAYS))
 
         # Skip if any plans are currently locked/active
         active_plans = self.list_active_plans()

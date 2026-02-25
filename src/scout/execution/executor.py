@@ -17,6 +17,10 @@ from scout.execution.actions import (
     StructuredStep,
 )
 from scout.execution.registry import ExecutionToolRegistry
+from scout.config.defaults import (
+    EXECUTOR_MAX_BUDGET,
+    EXECUTOR_ESTIMATED_COST,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +65,31 @@ class RollbackManager:
         return results
         
     def generate_undo_plan(self, from_step: int) -> StructuredPlan:
-        """Generate a plan to undo changes."""
-        # Future enhancement: generate structured undo plan
-        pass
+        """Generate a plan to undo changes made after from_step.
+
+        Uses the recorded changes in the rollback manager to create
+        a structured plan that reverses the changes.
+        """
+        undo_steps = []
+
+        # Changes are in order, so find all changes after from_step
+        for change in reversed(self._change_log):
+            if change.step_id > from_step:
+                # Generate an undo step for this change
+                undo_step = StructuredStep(
+                    action_type=ActionType.RUN_COMMAND,
+                    description=f"Undo {change.change_type} from step {change.step_id}",
+                    command=change.undo_command,
+                    step_id=len(undo_steps),
+                    depends_on=[],
+                )
+                undo_steps.append(undo_step)
+
+        return StructuredPlan(
+            steps=undo_steps,
+            raw_plan=f"Undo plan from step {from_step}",
+            summary=f"Generated undo plan for {len(undo_steps)} changes"
+        )
 
 
 class BudgetGuard:
@@ -95,7 +121,7 @@ class PlanExecutor:
     def __init__(
         self,
         registry: ExecutionToolRegistry,
-        max_budget: float = 0.10,
+        max_budget: float = EXECUTOR_MAX_BUDGET,
         discovery_callback: Optional[Callable] = None,
     ):
         self.registry = registry
@@ -232,7 +258,7 @@ class PlanExecutor:
                 )
             
             # Check budget
-            estimated_cost = 0.001  # Rough estimate
+            estimated_cost = EXECUTOR_ESTIMATED_COST  # Rough estimate
             if not await self.budget_guard.check(step, estimated_cost):
                 return StepResult(
                     step_id=step.step_id,
