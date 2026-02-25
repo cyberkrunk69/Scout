@@ -1,7 +1,4 @@
-"""Scout LLM client — Groq provider implementation.
-
-Provides the call_groq_async function for Groq API calls with cost tracking.
-"""
+"""Scout LLM Package - Full provider infrastructure and budget service."""
 
 from __future__ import annotations
 
@@ -212,7 +209,7 @@ async def call_groq_async(
 from scout.llm.providers import ProviderRegistry, ProviderResult, KeyState, is_permanent_error
 from scout.llm.cost import calculate_cost, MODEL_COSTS, TIER_MODELS, TASK_CONFIGS
 from scout.llm.pricing import estimate_cost_usd, PRICING
-from scout.llm.budget import BudgetService, BudgetReservation, BudgetError, InsufficientBudgetError
+from scout.llm.budget import BudgetService, BudgetReservation, BudgetError, InsufficientBudgetError, Reservation
 from scout.llm.circuit_breaker import CircuitBreaker, CircuitState, CircuitOpenError
 from scout.llm.ratelimit import OpenRouterRateLimiter, rate_limiter
 
@@ -220,3 +217,42 @@ from scout.llm import router, dispatch, select
 from scout.llm.retry import LLMCallContext, call_with_retries, BudgetExhaustedError
 
 NavResponse = LLMResponse  # Backward compatibility alias
+
+__all__ = [
+    # Budget exports
+    "BudgetError",
+    "BudgetReservation",
+    "BudgetService",
+    "InsufficientBudgetError",
+    "Reservation",
+    # LLM Response
+    "LLMResponse",
+    "NavResponse",
+    # Providers
+    "ProviderRegistry",
+    "ProviderResult",
+    "KeyState",
+    "is_permanent_error",
+    # Cost & pricing
+    "calculate_cost",
+    "MODEL_COSTS",
+    "TIER_MODELS",
+    "TASK_CONFIGS",
+    "estimate_cost_usd",
+    "PRICING",
+    # Circuit breaker
+    "CircuitBreaker",
+    "CircuitState",
+    "CircuitOpenError",
+    # Rate limiting
+    "OpenRouterRateLimiter",
+    "rate_limiter",
+    # Retry
+    "LLMCallContext",
+    "call_with_retries",
+    "BudgetExhaustedError",
+    # Router, dispatch, select
+    "router",
+    "dispatch",
+    "select",
+]

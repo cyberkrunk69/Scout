@@ -347,5 +347,6 @@ def get_budget_service(config: Optional[ScoutConfig] = None) -> BudgetService:
     """Get default budget service."""
     global _default_service
     if _default_service is None:
+        from scout.config import ScoutConfig
         _default_service = BudgetService(config or ScoutConfig())
     return _default_service

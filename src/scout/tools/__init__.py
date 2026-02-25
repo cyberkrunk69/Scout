@@ -644,7 +644,7 @@ def register_all_tools(mcp: "FastMCP") -> None:
     mcp.add_tool(scout_batch)
     mcp.add_tool(scout_run)
 
-    # Analysis tools - requires analysis-utils to be merged
+    # Analysis tools - requires analysis module to be available
     # mcp.add_tool(scout_hotspots)
 
 def get_tools_minimal():
