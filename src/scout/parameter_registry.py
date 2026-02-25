@@ -17,6 +17,7 @@ class ParameterRegistry:
     _instance: Optional["ParameterRegistry"] = None
     
     def __new__(cls):
+        """Create or return the singleton ParameterRegistry instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._map = {}

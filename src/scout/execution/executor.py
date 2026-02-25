@@ -280,8 +280,12 @@ class PlanExecutor:
             if adapter:
                 output = await adapter(step)
             else:
-                # Direct execution (placeholder)
-                output = {"executed": True, "tool": tool_name}
+                # No adapter registered - this is a configuration error
+                raise ValueError(
+                    f"No execution adapter registered for action type: {step.action_type}. "
+                    f"Register an adapter via registry.register(action_type, tool_name, adapter_func) "
+                    f"before executing plans."
+                )
             
             # Update budget
             actual_cost = estimated_cost

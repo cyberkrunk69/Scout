@@ -43,6 +43,14 @@ class SymbolRef:
 
     @classmethod
     def from_string(cls, s: str) -> SymbolRef:
+        """Create a SymbolRef from a string in 'path::symbol' format.
+
+        Args:
+            s: String in format 'path::symbol_name'
+
+        Returns:
+            A new SymbolRef instance.
+        """
         path_str, symbol = s.split("::", 1)
         return cls(Path(path_str), symbol)
 

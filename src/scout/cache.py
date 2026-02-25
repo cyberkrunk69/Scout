@@ -413,18 +413,22 @@ class CacheStats:
 
     @property
     def hits(self) -> int:
+        """Number of cache hits."""
         return self._stats["hits"]
 
     @property
     def misses(self) -> int:
+        """Number of cache misses."""
         return self._stats["misses"]
 
     @property
     def evictions(self) -> int:
+        """Number of cache entries evicted."""
         return self._stats["evictions"]
 
     @property
     def hit_rate(self) -> float:
+        """Cache hit rate as a percentage."""
         total = self.hits + self.misses
         return (self.hits / total * 100) if total > 0 else 0.0
 

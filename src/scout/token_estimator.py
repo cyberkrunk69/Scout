@@ -10,10 +10,18 @@ import os
 import re
 from typing import Optional
 
+from scout.config.defaults import (
+    TOKENS_PER_CHAR_ENGLISH,
+    TOKENS_PER_CHAR_CODE,
+    TOKEN_ESTIMATOR_MESSAGE_OVERHEAD,
+    TOKEN_ESTIMATOR_SYSTEM_MESSAGE_OVERHEAD,
+    TOKEN_ESTIMATOR_MODEL_DEFAULT,
+)
+
 
 # Rough token estimation ratios (tokens ≈ chars / ratio)
-TOKENS_PER_CHAR_ENGLISH = 4  # Conservative estimate for English
-TOKENS_PER_CHAR_CODE = 3     # Code is more dense
+TOKENS_PER_CHAR_ENGLISH = TOKENS_PER_CHAR_ENGLISH  # Conservative estimate for English
+TOKENS_PER_CHAR_CODE = TOKENS_PER_CHAR_CODE     # Code is more dense
 
 
 def estimate_tokens(text: str, is_code: bool = False) -> int:
@@ -57,15 +65,15 @@ def estimate_tokens_for_prompt(
     """
     total = 0
     
-    # System message (typically ~50 tokens overhead + content)
+    # System message (typically overhead + content)
     if system:
-        total += estimate_tokens(system) + 50
+        total += estimate_tokens(system) + TOKEN_ESTIMATOR_SYSTEM_MESSAGE_OVERHEAD
     
-    # Conversation history (each message has ~4 token overhead)
+    # Conversation history (each message has overhead)
     if messages:
         for msg in messages:
             content = msg.get("content", "")
-            total += estimate_tokens(content) + 4
+            total += estimate_tokens(content) + TOKEN_ESTIMATOR_MESSAGE_OVERHEAD
     
     # Main prompt
     total += estimate_tokens(prompt)
@@ -87,7 +95,7 @@ def count_messages_tokens(messages: list) -> int:
 class TokenEstimator:
     """More accurate token estimation using tiktoken if available."""
     
-    def __init__(self, model: str = "gpt-3.5-turbo"):
+    def __init__(self, model: str = TOKEN_ESTIMATOR_MODEL_DEFAULT):
         self.model = model
         self._encoder = None
         self._load_encoder()
@@ -137,6 +145,6 @@ def get_token_estimator() -> TokenEstimator:
     """Get default token estimator."""
     global _default_estimator
     if _default_estimator is None:
-        model = os.environ.get("SCOUT_TOKEN_ESTIMATOR_MODEL", "gpt-3.5-turbo")
+        model = os.environ.get("SCOUT_TOKEN_ESTIMATOR_MODEL", TOKEN_ESTIMATOR_MODEL_DEFAULT)
         _default_estimator = TokenEstimator(model)
     return _default_estimator

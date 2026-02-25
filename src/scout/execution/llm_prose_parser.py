@@ -13,6 +13,7 @@ import time
 from typing import Any, Callable, Dict, List, Optional, Protocol
 
 from .actions import ActionType, StructuredStep
+from scout.config.defaults import LLM_PARSER_DEFAULT_MAX_RETRIES
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ class LlmProseParser:
         self,
         llm_client: LLMClientProtocol,
         cost_tracker: Optional[CostTrackerProtocol] = None,
-        max_retries: int = 3,
+        max_retries: int = LLM_PARSER_DEFAULT_MAX_RETRIES,
         model: str = "llama-3.1-8b-instant",
     ):
         """Initialize the parser.
@@ -419,7 +420,8 @@ class LlmProseParser:
                 "UNKNOWN": "unknown",
             }
             if action_type_normalized in type_mapping.values():
-                step["action_type"] = type_mapping.get(action_type, action_type)
+                # Use the normalized value to find the correct key
+                step["action_type"] = action_type_normalized
             else:
                 self.logger.warning(
                     f"Step {index} has invalid action_type: {step.get('action_type')}, "

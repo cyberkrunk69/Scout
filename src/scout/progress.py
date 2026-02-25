@@ -28,10 +28,16 @@ class ProgressEvent:
     message: str = ""
     details: Optional[dict] = None
     timestamp: Optional[datetime] = None
+    task_id: str = ""  # Optional task identifier
+    metadata: Optional[dict] = None  # Additional metadata
     
     def __post_init__(self):
         if self.timestamp is None:
             self.timestamp = datetime.now()
+        if self.details is None:
+            self.details = {}
+        if self.metadata is None:
+            self.metadata = {}
 
 
 def format_deterministic(value: Any) -> str:
@@ -55,6 +61,10 @@ class ProgressReporter:
     
     def get_events(self) -> list[ProgressEvent]:
         """Get all events."""
+        return self._events
+    
+    def get_history(self) -> list[ProgressEvent]:
+        """Get all events (alias for get_events)."""
         return self._events
     
     def clear(self) -> None:

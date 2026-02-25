@@ -1,0 +1,36 @@
+/* Custom styles for Scout documentation */
+.md-header__title {
+    font-weight: 600;
+}
+
+.md-logo {
+    display: none;
+}
+
+.admonition.note {
+    border-left-color: #2196F3;
+}
+
+.admonition.warning {
+    border-left-color: #FF9800;
+}
+
+.admonition.important {
+    border-left-color: #F44336;
+}
+
+/* Code block styling */
+.highlight {
+    border-radius: 4px;
+}
+
+/* Navigation styling */
+.md-nav__link--active {
+    font-weight: 600;
+}
+
+/* Mermaid diagram styling */
+.mermaid {
+    background-color: transparent;
+    text-align: center;
+}

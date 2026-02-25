@@ -1,0 +1,102 @@
+site_name: Scout Core
+site_description: LLM routing, validation, and audit layer for AI-assisted development
+site_author: Scout Team
+site_url: https://github.com/cyberkrunk69/Scout
+
+repo_name: cyberkrunk69/Scout
+repo_url: https://github.com/cyberkrunk69/Scout
+
+copyright: Copyright &copy; 2024 Scout Team
+
+# Configuration
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - tables
+  - toc:
+      permalink: true
+
+# Plugins
+plugins:
+  - search:
+      lang: en
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            members_order: source
+            docstring_style: google
+
+# Navigation
+nav:
+  - Home: index.md
+  - Guides:
+      - guides/index.md
+      - guides/adding_a_provider.md
+  - API Reference:
+      - api/scout.md
+      - api/scout.llm.md
+      - api/scout.execution.md
+      - api/scout.trust.md
+  - Architecture Decision Records:
+      - adr/index.md
+      - adr/ADR-001-provider-registry.md
+      - adr/ADR-002-router-dispatch-select-separation.md
+      - adr/ADR-003-budget-service-reservation-semantics.md
+      - adr/ADR-004-trust-system-design.md
+      - adr/ADR-005-circuit-breaker-pattern.md
+      - adr/ADR-006-execution-framework.md
+      - adr/ADR-007-plan-executor-state-machine.md
+      - adr/ADR-008-batch-pipeline.md
+      - adr/ADR-009-caching-strategy.md
+      - adr/ADR-010-retry-mechanisms.md
+  - Testing: testing.md
+
+# Extra
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/cyberkrunk69/Scout
+
+extra_css:
+  - stylesheets/extra.css

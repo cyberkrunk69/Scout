@@ -29,6 +29,16 @@ class EnvLoader:
 
     @classmethod
     def load(cls, path: Optional[Path] = None) -> None:
+        """Load environment variables from .env file if it exists.
+
+        Reads key-value pairs from the specified .env file and sets them
+        as environment variables using setdefault (won't override existing
+        vars). This enables API keys to be available for tests and CLI
+        without manual sourcing.
+
+        Args:
+            path: Path to .env file (defaults to .env in current directory)
+        """
         if cls._loaded:
             return
 

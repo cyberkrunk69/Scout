@@ -39,10 +39,12 @@ The flow is:
 
 ### Step 1: Create the Base API Implementation
 
-Create a new file at `src/scout/llm/{provider}.py`. This handles the raw API communication. Here's a complete example based on `groq.py`:
+Create a new file at `src/scout/llm/{provider}.py`. This handles the raw API communication. Here's a complete example:
+
+> **Note**: The guide uses `groq.py` as an example, but in the actual codebase, `call_groq_async` is defined in `scout/llm/__init__.py`. For new providers, create a separate file like `scout/llm/{provider}.py`.
 
 ```python
-"""Groq provider for Scout."""
+"""Example provider for Scout."""
 
 import os
 import logging
@@ -52,24 +54,23 @@ import httpx
 
 from scout.llm import LLMResponse
 from scout.llm.pricing import estimate_cost_usd
-from scout.llm.timeout_config import get_timeout_config
 
 logger = logging.getLogger(__name__)
 
 
-async def call_groq_async(
+async def call_exampleprovider_async(
     prompt: str,
-    model: str = "llama-3.1-8b-instant",
+    model: str = "example-model",
     system: Optional[str] = None,
     max_tokens: int = 2048,
     temperature: Optional[float] = None,
 ) -> LLMResponse:
     """
-    Call the Groq API.
+    Call the Example Provider API.
 
     Args:
         prompt: User prompt
-        model: Model identifier (e.g., 'llama-3.1-8b-instant')
+        model: Model identifier (e.g., 'example-model')
         system: Optional system prompt
         max_tokens: Max tokens to generate
         temperature: Sampling temperature
@@ -77,11 +78,14 @@ async def call_groq_async(
     Returns:
         LLMResponse with content, cost, tokens, model
     """
-    api_key = os.environ.get("GROQ_API_KEY")
+    api_key = os.environ.get("EXAMPLEPROVIDER_API_KEY")
     if not api_key:
-        raise EnvironmentError("GROQ_API_KEY not set")
+        raise EnvironmentError("EXAMPLEPROVIDER_API_KEY not set")
 
-    url = os.environ.get("GROQ_API_URL", "https://api.groq.com/openai/v1/chat/completions")
+    url = os.environ.get(
+        "EXAMPLEPROVIDER_API_URL", 
+        "https://api.exampleprovider.com/v1/chat/completions"
+    )
 
     messages = []
     if system:
@@ -96,11 +100,7 @@ async def call_groq_async(
     if temperature is not None:
         payload["temperature"] = temperature
 
-    # Use configurable timeouts
-    timeout_config = get_timeout_config()
-    connect_timeout, read_timeout = timeout_config.for_provider("groq")
-
-    async with httpx.AsyncClient(timeout=httpx.Timeout(connect_timeout, read=read_timeout)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, read=60.0)) as client:
         response = await client.post(
             url,
             json=payload,
@@ -119,7 +119,7 @@ async def call_groq_async(
     input_tokens = data.get("usage", {}).get("prompt_tokens", 0)
     output_tokens = data.get("usage", {}).get("completion_tokens", 0)
 
-    # Correct signature: estimate_cost_usd(model_id, input_tokens, output_tokens)
+    # Note: The signature is estimate_cost_usd(model_id, input_tokens, output_tokens)
     cost_usd = estimate_cost_usd(
         model_id=model,
         input_tokens=input_tokens,
@@ -145,10 +145,10 @@ Note: It takes `model_id` (not separate `provider` and `model` parameters).
 
 ### Step 2: Create the Provider Wrapper
 
-Create `src/scout/llm/providers/{provider}.py`. This connects your implementation to the registry. Here's a complete example based on `groq.py`:
+Create `src/scout/llm/providers/{provider}.py`. This connects your implementation to the registry. Here's a complete example:
 
 ```python
-"""Groq provider for ProviderRegistry.
+"""Example provider for ProviderRegistry.
 
 Provides multi-key support with health tracking.
 """
@@ -161,7 +161,7 @@ from scout.llm.providers import ProviderClient, ProviderResult, registry, is_per
 logger = logging.getLogger(__name__)
 
 
-async def _call_groq(
+async def _call_exampleprovider(
     model: str,
     prompt: str,
     system: Optional[str] = None,
@@ -171,46 +171,48 @@ async def _call_groq(
     **kwargs,
 ) -> ProviderResult:
     """
-    Wrapper for Groq API that returns ProviderResult.
-
+    Wrapper for Example Provider API that returns ProviderResult.
+    
     Args:
-        model: Model name (e.g., 'llama-3.1-8b-instant')
+        model: Model name (e.g., 'example-model')
         prompt: User prompt
         system: Optional system prompt
         max_tokens: Max tokens to generate
         temperature: Sampling temperature
         api_key: API key (ignored - we use the key from the registry)
-
+        
     Returns:
         ProviderResult with response, cost, tokens, model, provider
     """
     # Import inside function to avoid circular import
-    from scout.llm import call_groq_async, LLMResponse
-
+    # Note: Import from the provider's own module, not from scout.llm
+    from scout.llm.exampleprovider import call_exampleprovider_async
+    from scout.llm import LLMResponse
+    
     # Get provider for key rotation tracking
-    provider = registry.get("groq")
-
-    # Call the actual Groq function
+    provider = registry.get("exampleprovider")
+    
+    # Call the actual provider function
     try:
-        response: LLMResponse = await call_groq_async(
+        response: LLMResponse = await call_exampleprovider_async(
             prompt=prompt,
             model=model,
             system=system,
             max_tokens=max_tokens,
             temperature=temperature,
         )
-
+        
         # Success - reset failure count for the key being used
         if provider.keys:
             provider.record_key_success(provider.keys[0].key)
-
+        
         return ProviderResult(
             response_text=response.content,
             cost_usd=response.cost_usd,
             input_tokens=response.input_tokens,
             output_tokens=response.output_tokens,
             model=response.model,
-            provider="groq",
+            provider="exampleprovider",
         )
     except Exception as e:
         # Record failure for the provider
@@ -223,19 +225,19 @@ async def _call_groq(
 
 
 # Create provider client
-_groq_client = ProviderClient(
-    name="groq",
-    call=_call_groq,
-    env_key_name="GROQ_API_KEYS",      # Comma-separated keys: "key1,key2,key3"
-    env_single_key_name="GROQ_API_KEY", # Single key fallback
+_exampleprovider_client = ProviderClient(
+    name="exampleprovider",
+    call=_call_exampleprovider,
+    env_key_name="EXAMPLEPROVIDER_API_KEYS",      # Comma-separated keys: "key1,key2,key3"
+    env_single_key_name="EXAMPLEPROVIDER_API_KEY", # Single key fallback
     default_cooldown=60.0,
     max_failures_before_cooldown=3,
     max_key_attempts=3,
 )
 
 # Register on import
-registry.register("groq", _groq_client)
-logger.info("Registered groq provider with %d keys", len(_groq_client.keys))
+registry.register("exampleprovider", _exampleprovider_client)
+logger.info("Registered exampleprovider provider with %d keys", len(_exampleprovider_client.keys))
 ```
 
 ### Step 3: Register the Provider Module
@@ -267,11 +269,30 @@ PROVIDER_MAP = {
     "minimax": ("minimax", call_minimax_async),
     "abab6": ("minimax", call_minimax_async),
     # Add your provider here:
-    "yourmodelprefix": ("yourprovider", call_yourprovider_async),
+    "example": ("exampleprovider", call_exampleprovider_async),
 }
 ```
 
 The key is the model prefix (lowercase). When a model name contains this prefix, it's routed to the specified provider. The dispatcher checks prefixes in order and falls back to `DEFAULT_PROVIDER` if no match is found.
+
+**Important**: You also need to add a handler in the `call_llm_async()` function in the same file. Add an import at the top and an `elif` block to handle your provider:
+
+```python
+# At the top of dispatch.py, add the import:
+from scout.llm.exampleprovider import call_exampleprovider_async
+
+# In call_llm_async(), add a handler (before the else clause):
+elif provider_name == "exampleprovider":
+    response: NavResponse = await provider_func(
+        prompt=prompt,
+        model=model,
+        system=system,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+    _audit.log("llm_response", model=model, cost=response.cost_usd, response_length=len(response.content))
+    return response.content, response.cost_usd
+```
 
 ### Step 5: Add Pricing Information
 
@@ -913,12 +934,28 @@ PERMANENT_ERROR_PATTERNS.update({
 1. Check `PROVIDER_MAP` in `dispatch.py`
 2. Verify model name prefix matches (case-insensitive)
 3. Ensure fallback to `DEFAULT_PROVIDER` is working
+4. **Important**: Make sure you've added a handler in `call_llm_async()` for your provider (see Step 4)
 
 ### Cost Calculation Issues
 
 1. Verify `estimate_cost_usd` signature: `(model_id, input_tokens, output_tokens)`
 2. Check pricing entry exists in `PRICING` dictionary
 3. Verify token counts are extracted from API response
+
+### Import Errors in Provider Wrapper
+
+If you see `ImportError: cannot import name 'call_yourprovider_async' from 'scout.llm'`:
+
+1. Make sure you've created the base API implementation file at `src/scout/llm/{provider}.py`
+2. In the provider wrapper, import from `scout.llm.{provider}` instead of `scout.llm`:
+   ```python
+   # Correct:
+   from scout.llm.exampleprovider import call_exampleprovider_async
+   from scout.llm import LLMResponse
+   
+   # Incorrect:
+   from scout.llm import call_exampleprovider_async, LLMResponse
+   ```
 
 ---
 

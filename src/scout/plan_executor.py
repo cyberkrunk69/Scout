@@ -135,8 +135,10 @@ class WebPlanExecutor:
                         step_index=step_index,
                     )
                 else:
-                    # Non-browser step - skip for now or log warning
-                    logger.warning(f"Skipping non-browser step: {step_dict.get('command')}")
+                    # Non-browser step - WebPlanExecutor only handles browser actions
+                    # Non-web actions (e.g., run_command, file operations) should be
+                    # executed via PlanExecutor which supports adapters for each action type
+                    logger.debug(f"Skipping non-browser step (handled by PlanExecutor): {step_dict.get('command')}")
                     continue
             else:
                 step = step_dict

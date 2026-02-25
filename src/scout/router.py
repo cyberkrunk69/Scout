@@ -38,6 +38,24 @@ from scout.validator import ValidationResult, Validator
 # Import from new LLM infrastructure (Phase 2)
 from scout.llm.router import call_llm
 
+# Import navigation defaults
+from scout.config.defaults import (
+    NAV_DEFAULT_CONFIDENCE,
+    NAV_FALLBACK_CONFIDENCE,
+    NAV_INDEX_CONFIDENCE,
+    NAV_COST_8B_ESTIMATE,
+    NAV_COST_70B_ESTIMATE,
+    NAV_FALLBACK_DURATION_MS,
+    NAV_CONTEXT_MAX_CHARS,
+    NAV_SEARCH_RESULT_LIMIT,
+    NAV_PYTHON_FILE_LIMIT,
+    NAV_TOKEN_MIN,
+    NAV_TOKEN_MAX,
+    NAV_TOKEN_CHAR_RATIO,
+    TASK_HIGH_CONFIDENCE_THRESHOLD,
+    TASK_LOW_CONFIDENCE_THRESHOLD,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -113,10 +131,15 @@ class SymbolDoc:
 
 
 def _notify_user(message: str) -> None:
-    """Notify user (stub — override for testing or real UI)."""
-    # Could use logging, print, or IDE notification
-    import logging
+    """
+    Notify user of Scout events.
 
+    Uses Python's logging system at INFO level with "Scout:" prefix.
+    This can be overridden by passing a custom notify callable to TriggerRouter.
+
+    Args:
+        message: The notification message to display.
+    """
     logging.getLogger(__name__).info("Scout: %s", message)
 
 
@@ -166,7 +189,7 @@ class TriggerRouter:
                 return TOKENS_PER_SMALL_FILE
             content = path.read_text(encoding="utf-8", errors="replace")
             # Rough: ~4 chars per token for code
-            return max(100, min(len(content) // 4, 5000))
+            return max(NAV_TOKEN_MIN, min(len(content) // NAV_TOKEN_CHAR_RATIO, NAV_TOKEN_MAX))
         except OSError:
             return TOKENS_PER_SMALL_FILE
 
@@ -280,10 +303,8 @@ class TriggerRouter:
 
         Does not block commit on failure—logs and continues. Uses global semaphore.
         """
-        # TODO: Phase 2 - extract git_analyzer and git_drafts modules
-        # from scout.git_analyzer import get_changed_files
-        # from scout.git_drafts import assemble_commit_message
-        return  # Stub - these modules not yet extracted
+        from scout.git_analyzer import get_changed_files
+        from scout.git_drafts import assemble_commit_message
 
         try:
             staged = get_changed_files(staged_only=True, repo_root=self.repo_root)
@@ -380,7 +401,9 @@ class TriggerRouter:
         """Estimated cost for task-based navigation (8B + retry + possible 70B)."""
         return TASK_NAV_ESTIMATED_COST
 
-    def _list_python_files(self, entry: Optional[Path], limit: int = 50) -> List[str]:
+    def _list_python_files(
+        self, entry: Optional[Path], limit: int = NAV_PYTHON_FILE_LIMIT
+    ) -> List[str]:
         """List Python files for context. If entry given, scope to that dir."""
         base = (self.repo_root / entry) if entry else self.repo_root
         if not base.exists():
@@ -437,11 +460,57 @@ class TriggerRouter:
 
         # Try scout-index first (free, no cost limit)
         try:
-            # TODO: Phase 2 - extract cli.index module
-            # from scout.cli.index import query_for_nav
-            return None  # Stub
+            from scout.search import SearchIndex
 
-            suggestions_list = query_for_nav(self.repo_root, task)
+            index = SearchIndex()
+            index_results = index.search(task, limit=NAV_SEARCH_RESULT_LIMIT)
+            if index_results:
+                # Convert search results to navigation suggestions
+                suggestions_list = []
+                for r in index_results:
+                    # Extract relevant info from search result
+                    doc_id = r.get("id", "")
+                    content = r.get("content", "")
+                    title = r.get("title", "")
+                    
+                    # Try to find file path from id or title
+                    file_path = doc_id or title
+                    if not file_path:
+                        continue
+
+                    # Estimate line number from content if not provided
+                    # Use pattern matching to find function definition lines
+                    line_estimate = r.get("line", 1)
+                    if content and line_estimate == 1:
+                        # Try to find function/class definition in content
+                        content_lower = content.lower()
+                        for prefix in ["def ", "class ", "async def "]:
+                            idx = content_lower.find(prefix)
+                            if idx >= 0 and idx < 200:  # Within first 200 chars
+                                # Rough line estimation
+                                line_estimate = max(1, content[:idx].count("\n") + 1)
+                                break
+
+                    # Calculate confidence based on index metadata
+                    # Index results get lower confidence than LLM (but higher than fallback)
+                    base_confidence = NAV_INDEX_CONFIDENCE
+                    # Boost confidence if there's a strong match in title
+                    if title and task.lower() in title.lower():
+                        base_confidence = min(NAV_DEFAULT_CONFIDENCE, base_confidence + 10)
+                    
+                    # Create suggestion dict matching expected format
+                    suggestion = {
+                        "target_file": file_path,
+                        "file": file_path,
+                        "line_estimate": line_estimate,
+                        "function": r.get("function", ""),
+                        "confidence": base_confidence,
+                        "reasoning": f"Found via index: {r.get('snippet', '')[:100]}",
+                        "related_files": [],
+                        "index_score": r.get("score", 0.0),  # Store index score for debugging
+                    }
+                    suggestions_list.append(suggestion)
+
             if suggestions_list:
                 # Pick best candidate: first non-test file if entry-scoped, else first
                 suggestion = None
@@ -473,7 +542,7 @@ class TriggerRouter:
                     )
 
                 if suggestion and isinstance(suggestion, dict):
-                    suggestion.setdefault("confidence", 85)
+                    suggestion.setdefault("confidence", NAV_DEFAULT_CONFIDENCE)
                     suggestion.setdefault("model_used", "scout-index")
                     suggestion.setdefault("cost_usd", 0.0)
                     suggestion.setdefault("duration_ms", 0)
@@ -546,7 +615,7 @@ class TriggerRouter:
                             "confidence": (
                                 validation.adjusted_confidence
                                 if validation.is_valid
-                                else suggestion.get("confidence", 85)
+                                else suggestion.get("confidence", NAV_DEFAULT_CONFIDENCE)
                             ),
                             "model_used": "scout-index",
                             "cost_usd": 0.0,
@@ -614,7 +683,7 @@ Respond with JSON only:
         )
 
         suggestion = self._parse_nav_json(result.content)
-        suggestion.setdefault("confidence", 85)
+        suggestion.setdefault("confidence", NAV_DEFAULT_CONFIDENCE)
         suggestion.setdefault("reasoning", "")
         suggestion.setdefault("suggestion", "")
 
@@ -643,7 +712,7 @@ Respond with JSON only:
                 cost=result.cost_usd,
             )
             suggestion = self._parse_nav_json(result.content)
-            suggestion.setdefault("confidence", 85)
+            suggestion.setdefault("confidence", NAV_DEFAULT_CONFIDENCE)
             suggestion.setdefault("reasoning", "")
             suggestion.setdefault("suggestion", "")
             validation = await self.validator.validate(suggestion)
@@ -664,7 +733,7 @@ Respond with JSON only:
                 reason="persistent_validation_failure",
             )
             suggestion = self._parse_nav_json(result.content)
-            suggestion.setdefault("confidence", 85)
+            suggestion.setdefault("confidence", NAV_DEFAULT_CONFIDENCE)
             suggestion.setdefault("reasoning", "")
             suggestion.setdefault("suggestion", "")
             validation = await self.validator.validate(suggestion)
@@ -772,25 +841,111 @@ Respond with JSON only:
             if not file.exists():
                 return ""
             content = file.read_text(encoding="utf-8", errors="replace")
-            return content[:2000]
+            return content[:NAV_CONTEXT_MAX_CHARS]
         except OSError:
             return ""
 
-    def _scout_nav(self, file: Path, context: str, model: str = "8b") -> NavResult:
-        """Generate nav suggestion (stub — real impl in scout-nav-cli)."""
-        # Stub: return a valid suggestion for testing
+    async def _scout_nav_async(
+        self, file: Path, context: str, model: str = "8b"
+    ) -> NavResult:
+        """
+        Generate nav suggestion using LLM (async version).
+
+        Uses call_llm to analyze the file and suggest navigation targets.
+        Falls back to heuristic result on failure.
+        """
+        import time
+
+        model_id = "llama-3.1-8b-instant" if model == "8b" else "llama-3.3-70b-versatile"
+        estimated_cost = NAV_COST_8B_ESTIMATE if model == "8b" else NAV_COST_70B_ESTIMATE
+
         try:
-            rel = str(file.relative_to(self.repo_root))
+            rel_path = str(file.relative_to(self.repo_root))
         except ValueError:
-            rel = str(file)
-        cost = 0.0002 if model == "8b" else 0.0009
+            rel_path = str(file)
+
+        prompt = f"""Analyze this file and suggest the key functions/symbols that should be documented:
+
+File: {rel_path}
+Context (first {NAV_CONTEXT_MAX_CHARS} chars):
+{context[:NAV_CONTEXT_MAX_CHARS]}
+
+Respond with JSON only:
+{{"file": "<path>", "function": "<name>", "line": <n>, "confidence": <0-100>}}"""
+
+        try:
+            start = time.perf_counter()
+            result = await call_llm(
+                prompt,
+                task_type="nav",
+                model=model_id,
+                max_tokens=128,
+            )
+            duration_ms = int((time.perf_counter() - start) * 1000)
+
+            suggestion = self._parse_nav_json(result.content)
+            suggestion.setdefault("confidence", NAV_DEFAULT_CONFIDENCE)
+
+            return NavResult(
+                suggestion=suggestion,
+                cost=result.cost_usd,
+                duration_ms=duration_ms,
+                signature_changed=False,
+                new_exports=False,
+            )
+        except Exception as e:
+            logger.warning("LLM nav failed for %s: %s, using fallback", file, e)
+
+        # Heuristic fallback
         return NavResult(
-            suggestion={"file": rel, "function": "main", "line": 1, "confidence": 90},
-            cost=cost,
-            duration_ms=50,
+            suggestion={
+                "file": rel_path,
+                "function": "main",
+                "line": 1,
+                "confidence": NAV_FALLBACK_CONFIDENCE,
+            },
+            cost=estimated_cost,
+            duration_ms=NAV_FALLBACK_DURATION_MS,
             signature_changed=False,
             new_exports=False,
         )
+
+    def _scout_nav(self, file: Path, context: str, model: str = "8b") -> NavResult:
+        """
+        Generate nav suggestion using LLM (sync wrapper).
+
+        This is a synchronous wrapper around _scout_nav_async.
+        For async contexts, call _scout_nav_async directly.
+        """
+        try:
+            return asyncio.run(self._scout_nav_async(file, context, model))
+        except Exception as e:
+            logger.warning(
+                "Failed to run async nav, using sync fallback: %s", e
+            )
+            # Ultimate fallback with no event loop
+            model_id = (
+                "llama-3.1-8b-instant" if model == "8b" else "llama-3.3-70b-versatile"
+            )
+            estimated_cost = (
+                NAV_COST_8B_ESTIMATE if model == "8b" else NAV_COST_70B_ESTIMATE
+            )
+            try:
+                rel_path = str(file.relative_to(self.repo_root))
+            except ValueError:
+                rel_path = str(file)
+            return NavResult(
+                suggestion={
+                    "file": rel_path,
+                    "function": "main",
+                    "line": 1,
+                    "confidence": NAV_FALLBACK_CONFIDENCE,
+                },
+                cost=estimated_cost,
+                duration_ms=NAV_FALLBACK_DURATION_MS,
+                signature_changed=False,
+                new_exports=False,
+            )
 
     def _affects_module_boundary(self, file: Path, nav_result: NavResult) -> bool:
         """Detect if change affects module interface."""
@@ -820,17 +975,144 @@ Respond with JSON only:
             return file.stem or "unknown"
 
     def _critical_path_files(self) -> set:
-        """Files considered critical (triggers PR draft)."""
-        # Stub: check for SYSTEM or runtime files
-        return set()
+        """
+        Files considered critical (triggers PR draft).
+
+        Identifies files in critical paths that should generate a PR draft:
+        - Configuration files (config, settings, .env)
+        - Runtime/entry point files (main, app, server)
+        - Public API files (exposed interfaces)
+        - System files (__init__.py at package roots)
+
+        Returns set of critical file paths relative to repo root.
+        """
+        critical_patterns = {
+            # Config files
+            "config", "settings", ".env", ".config",
+            # Entry points
+            "main", "app", "server", "application", "runner",
+            # Public API indicators
+            "api", "interface", "protocol",
+            # System files
+            "__init__",
+        }
+
+        critical_files = set()
+
+        try:
+            # Walk through the repo and find files matching critical patterns
+            for py_file in self.repo_root.rglob("*.py"):
+                try:
+                    rel_path = py_file.relative_to(self.repo_root)
+                except ValueError:
+                    continue
+
+                rel_str = str(rel_path)
+                rel_lower = rel_str.lower()
+
+                # Check if any critical pattern matches the file path
+                for pattern in critical_patterns:
+                    if pattern in rel_lower:
+                        critical_files.add(py_file)
+                        break
+
+                # Also check if file is in a runtime directory
+                parts = rel_path.parts
+                if parts:
+                    first_dir = parts[0].lower()
+                    if first_dir in {"src", "lib", "app", "runtime", "core", "pkg"}:
+                        critical_files.add(py_file)
+
+        except Exception as e:
+            logger.warning("Error identifying critical path files: %s", e)
+
+        return critical_files
 
     def _generate_symbol_doc(
         self, file: Path, nav_result: NavResult, validation: ValidationResult
     ) -> SymbolDoc:
-        """Generate symbol doc (stub — real impl in scout-brief)."""
-        cost = 0.0002
+        """
+        Generate symbol documentation using LLM.
+
+        Analyzes the file and generates documentation based on navigation
+        suggestions and validation results.
+        """
+        import time
+
+        try:
+            rel_path = str(file.relative_to(self.repo_root))
+        except ValueError:
+            rel_path = str(file)
+
+        # Build context from validation and nav result
+        target_function = nav_result.suggestion.get("function", "")
+        target_line = nav_result.suggestion.get("line", 1)
+        context_lines = ""
+
+        try:
+            if file.exists():
+                lines = file.read_text(encoding="utf-8", errors="replace").split("\n")
+                # Get surrounding context (10 lines before and after)
+                start = max(0, target_line - 11)
+                end = min(len(lines), target_line + 10)
+                context_lines = "\n".join(lines[start:end])
+        except OSError:
+            pass
+
+        prompt = f"""Generate documentation for this code symbol:
+
+File: {rel_path}
+Function/Symbol: {target_function}
+Line: {target_line}
+
+Code context:
+{context_lines}
+
+Respond with Markdown documentation including:
+- Brief description (what this does)
+- Parameters (if applicable)
+- Returns (if applicable)
+- Example usage (if helpful)
+
+Keep it concise but informative."""
+
+        async def _get_doc_result() -> SymbolDoc:
+            try:
+                start = time.perf_counter()
+                result = await call_llm(
+                    prompt,
+                    task_type="simple",
+                    model="llama-3.1-8b-instant",
+                    system="Documentation assistant. Generate clear, concise docs.",
+                    max_tokens=512,
+                )
+                duration_ms = int((time.perf_counter() - start) * 1000)
+
+                return SymbolDoc(
+                    content=result.content,
+                    generation_cost=result.cost_usd,
+                )
+            except Exception as e:
+                logger.warning(
+                    "LLM symbol doc failed for %s: %s, using fallback",
+                    file,
+                    e,
+                )
+                raise
+
+        # Try to run async, fallback on failure
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                raise RuntimeError("Already in async context")
+            return loop.run_until_complete(_get_doc_result())
+        except RuntimeError:
+            pass
+
+        # Fallback to basic doc
         return SymbolDoc(
-            content=f"# {file.name}\n\nGenerated doc.", generation_cost=cost
+            content=f"# {file.name}\n\n**{target_function}**\n\nLocated at line {target_line}.\n\nSee validation result for details.",
+            generation_cost=NAV_COST_8B_ESTIMATE,
         )
 
     def _write_draft(self, file: Path, symbol_doc: SymbolDoc) -> Path:
@@ -870,8 +1152,60 @@ Respond with JSON only:
             f.write(f"ESCALATION: {file} - {validation.error_code}\n")
 
     def _create_pr_draft(self, module: str, file: Path, session_id: str) -> None:
-        """Create PR draft for critical path (stub)."""
-        pass
+        """
+        Create PR draft for critical path changes.
+
+        Uses git_drafts.assemble_pr_description to generate a PR description
+        from the generated commit/PR drafts.
+        """
+        from scout.git_drafts import assemble_pr_description
+
+        try:
+            # Get staged files to assemble PR description
+            from scout.git_analyzer import get_changed_files
+
+            staged = get_changed_files(staged_only=True, repo_root=self.repo_root)
+            if not staged:
+                return
+
+            # Assemble PR description from drafts
+            pr_description = assemble_pr_description(self.repo_root, staged)
+            if not pr_description or "No staged" in pr_description:
+                return
+
+            # Write to PR draft file
+            draft_dir = self.repo_root / "docs" / "drafts"
+            draft_dir.mkdir(parents=True, exist_ok=True)
+            pr_draft_path = draft_dir / "pr_description.md"
+            pr_draft_path.write_text(pr_description, encoding="utf-8")
+
+            self.audit.log(
+                "pr_draft",
+                session_id=session_id,
+                module=module,
+                file=str(file),
+            )
+            logger.debug(
+                "_create_pr_draft completed for module=%s file=%s",
+                module,
+                file,
+            )
+        except Exception as e:
+            logger.warning(
+                "_create_pr_draft failed for module=%s file=%s: %s",
+                module,
+                file,
+                e,
+                exc_info=True,
+            )
+            self.audit.log(
+                "pr_draft",
+                session_id=session_id,
+                module=module,
+                file=str(file),
+                reason="error",
+                error=str(e),
+            )
 
     def _load_symbol_docs(self, file: Path) -> str:
         """Load existing symbol docs from .docs/ or docs/livingDoc/ if present."""
@@ -1265,9 +1599,9 @@ class TaskRouter:
         IntentType.DOCUMENT,
     }
 
-    # Confidence thresholds
-    HIGH_CONFIDENCE_THRESHOLD = 0.9
-    LOW_CONFIDENCE_THRESHOLD = 0.7
+    # Confidence thresholds (imported from config)
+    HIGH_CONFIDENCE_THRESHOLD = TASK_HIGH_CONFIDENCE_THRESHOLD
+    LOW_CONFIDENCE_THRESHOLD = TASK_LOW_CONFIDENCE_THRESHOLD
 
     def __init__(self, config: Optional[ScoutConfig] = None):
         self.config = config or ScoutConfig()

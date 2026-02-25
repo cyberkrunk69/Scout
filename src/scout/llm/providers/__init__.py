@@ -321,3 +321,4 @@ from scout.llm.providers import groq  # noqa: F401
 from scout.llm.providers import google  # noqa: F401
 from scout.llm.providers import minimax  # noqa: F401
 from scout.llm.providers import anthropic  # noqa: F401
+from scout.llm.providers import exampleprovider  # noqa: F401

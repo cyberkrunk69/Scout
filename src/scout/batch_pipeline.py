@@ -350,6 +350,11 @@ class PipelineExecutor:
         return self.reporter
     
     def get_context(self) -> BatchContext:
+        """Get the batch execution context.
+
+        Returns:
+            The BatchContext instance for this pipeline.
+        """
         return self.context
     
     def to_dict(self) -> dict:

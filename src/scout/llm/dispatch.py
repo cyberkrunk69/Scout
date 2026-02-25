@@ -14,6 +14,7 @@ from scout.llm.google import call_google_async, GEMINI_MODELS
 from scout.llm.minimax import call_minimax_async
 from scout.llm.anthropic import call_anthropic_async, CLAUDE_MODELS
 from scout.llm.router import call_deepseek_async
+from scout.llm.exampleprovider import call_exampleprovider_async
 from scout.audit import AuditLog
 
 _audit = AuditLog()
@@ -28,6 +29,8 @@ PROVIDER_MAP = {
     "claude": ("anthropic", call_anthropic_async),
     "minimax": ("minimax", call_minimax_async),
     "abab6": ("minimax", call_minimax_async),
+    # Example provider for testing
+    "example": ("exampleprovider", call_exampleprovider_async),
 }
 
 
@@ -135,6 +138,17 @@ async def call_llm_async(
         response_text, cost = result
         _audit.log("llm_response", model=model, cost=cost, response_length=len(response_text))
         return result
+    
+    elif provider_name == "exampleprovider":
+        response: NavResponse = await provider_func(
+            prompt=prompt,
+            model=model,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        _audit.log("llm_response", model=model, cost=response.cost_usd, response_length=len(response.content))
+        return response.content, response.cost_usd
     
     else:
         raise ValueError(f"Unknown provider: {provider_name}")

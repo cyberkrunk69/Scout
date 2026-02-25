@@ -5,6 +5,14 @@ import time
 from pathlib import Path
 from typing import List, Optional
 
+from scout.config.defaults import (
+    SAFETY_MAX_PATH_DEPTH,
+    SAFETY_MAX_LIST_DEPTH,
+    SAFETY_MAX_FILE_SIZE_KB,
+    SAFETY_DEFAULT_COMMAND_TIMEOUT,
+    SAFETY_MAX_WAIT_SECONDS,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,7 +79,7 @@ class SafetyGuard:
         """If dry-run mode, simulate but don't execute."""
         return self.dry_run
         
-    def check_depth(self, path: str, max_depth: int = 10) -> bool:
+    def check_depth(self, path: str, max_depth: int = SAFETY_MAX_PATH_DEPTH) -> bool:
         """Check if path depth exceeds maximum."""
         depth = len(Path(path).parts)
         if depth > max_depth:
@@ -185,7 +193,7 @@ async def scout_move(source: str, destination: str, overwrite: bool = False, gua
         return {"success": False, "error": str(e)}
 
 
-async def scout_list(path: str = ".", pattern: str = None, recursive: bool = False, max_depth: int = 3, guard: SafetyGuard = None) -> dict:
+async def scout_list(path: str = ".", pattern: str = None, recursive: bool = False, max_depth: int = SAFETY_MAX_LIST_DEPTH, guard: SafetyGuard = None) -> dict:
     """List directory contents."""
     from pathlib import Path
     import fnmatch
@@ -218,7 +226,7 @@ async def scout_list(path: str = ".", pattern: str = None, recursive: bool = Fal
         return {"success": False, "error": str(e)}
 
 
-async def scout_read_file(path: str, encoding: str = "utf-8", max_size_kb: int = 1024, guard: SafetyGuard = None) -> dict:
+async def scout_read_file(path: str, encoding: str = "utf-8", max_size_kb: int = SAFETY_MAX_FILE_SIZE_KB, guard: SafetyGuard = None) -> dict:
     """Read file content."""
     from pathlib import Path
     
@@ -241,7 +249,7 @@ async def scout_read_file(path: str, encoding: str = "utf-8", max_size_kb: int =
         return {"success": False, "error": str(e)}
 
 
-async def scout_write_file(path: str, content: str, append: bool = False, guard: SafetyGuard = None) -> dict:
+async def scout_write_file(path: str, content: str, append: bool = False, guard: SafetyGuard = None, encoding: str = "utf-8") -> dict:
     """Write file content."""
     if guard and guard.check_dry_run():
         return {"success": True, "path_written": path, "dry_run": True}
@@ -254,9 +262,10 @@ async def scout_write_file(path: str, content: str, append: bool = False, guard:
         target.parent.mkdir(parents=True, exist_ok=True)
         
         if append:
-            target.write_text(content, append=True)
+            with open(target, 'a', encoding=encoding) as f:
+                f.write(content)
         else:
-            target.write_text(content)
+            target.write_text(content, encoding=encoding)
         
         bytes_written = len(content.encode('utf-8'))
         return {"success": True, "path_written": str(target), "bytes_written": bytes_written}
@@ -264,7 +273,7 @@ async def scout_write_file(path: str, content: str, append: bool = False, guard:
         return {"success": False, "error": str(e)}
 
 
-async def scout_command(command: str, args: List[str] = None, timeout: int = 30, cwd: str = None, guard: SafetyGuard = None) -> dict:
+async def scout_command(command: str, args: List[str] = None, timeout: int = SAFETY_DEFAULT_COMMAND_TIMEOUT, cwd: str = None, guard: SafetyGuard = None) -> dict:
     """Run shell command."""
     import subprocess
     
@@ -303,7 +312,7 @@ async def scout_check_command(command: str) -> dict:
     return {"success": True, "available": False}
 
 
-async def scout_wait(seconds: int = None, condition: str = None, condition_params: dict = None, max_wait: int = 60) -> dict:
+async def scout_wait(seconds: int = None, condition: str = None, condition_params: dict = None, max_wait: int = SAFETY_MAX_WAIT_SECONDS) -> dict:
     """Wait until condition is met or timeout.
 
     Args:

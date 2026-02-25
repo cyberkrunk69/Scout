@@ -60,6 +60,12 @@ PRICING = {
         "output_per_million": 1.20,
         "nickname": "minimax",
     },
+    # Example provider (dummy for testing the provider guide)
+    "example-model": {
+        "input_per_million": 0.10,
+        "output_per_million": 0.20,
+        "nickname": "example",
+    },
 }
 
 

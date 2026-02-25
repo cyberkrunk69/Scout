@@ -6,6 +6,8 @@ import logging
 from scout.config.defaults import (
     STEP_DEFAULT_MAX_RETRIES,
     STEP_DEFAULT_TIMEOUT_SECONDS,
+    WEBSTEP_DEFAULT_MAX_RETRIES,
+    WEBSTEP_DEFAULT_TIMEOUT_SECONDS,
 )
 
 logger = logging.getLogger(__name__)
@@ -104,8 +106,8 @@ class WebStep:
     
     # Execution metadata
     step_index: int = 0
-    max_retries: int = 1
-    timeout_seconds: int = 30
+    max_retries: int = WEBSTEP_DEFAULT_MAX_RETRIES
+    timeout_seconds: int = WEBSTEP_DEFAULT_TIMEOUT_SECONDS
     
     def __post_init__(self):
         """Validate and set defaults for WebStep.

@@ -59,8 +59,18 @@ RETRY_JITTER_FACTOR = 0.1
 # Circuit Breaker Defaults
 # =============================================================================
 
+# General Circuit Breaker (for operations like batch processing)
 CIRCUIT_BREAKER_FAILURE_THRESHOLD = 5
-CIRCUIT_BREAKER_COOLDOWN_SECONDS = 300
+CIRCUIT_BREAKER_SUCCESS_THRESHOLD = 2
+CIRCUIT_BREAKER_TIMEOUT_SECONDS = 30.0  # Time in OPEN state before HALF_OPEN
+CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS = 3
+
+# Provider-level Circuit Breaker (for LLM providers - longer cooldown)
+# This is used for provider-wide failures where we want longer recovery time
+CIRCUIT_BREAKER_PROVIDER_COOLDOWN_SECONDS = 300  # 5 minutes - for expensive API calls
+
+# Backward compatibility alias (deprecated - use CIRCUIT_BREAKER_PROVIDER_COOLDOWN_SECONDS)
+CIRCUIT_BREAKER_COOLDOWN_SECONDS = CIRCUIT_BREAKER_PROVIDER_COOLDOWN_SECONDS
 
 
 # =============================================================================
@@ -183,10 +193,26 @@ SLIDING_WINDOW_TOKENS_PER_MINUTE = 100_000  # 100k TPM default
 # Default confidence levels for navigation suggestions
 NAV_DEFAULT_CONFIDENCE = 85  # Default confidence when LLM doesn't provide one
 NAV_FALLBACK_CONFIDENCE = 90  # Fallback confidence for heuristic results
+NAV_INDEX_CONFIDENCE = 70  # Confidence for index-based suggestions (lower than LLM)
 
 # Cost estimates for navigation
 NAV_COST_8B_ESTIMATE = 0.0002  # Estimated cost for 8B model navigation
 NAV_COST_70B_ESTIMATE = 0.0009  # Estimated cost for 70B model navigation
+
+# Navigation fallback duration (milliseconds)
+NAV_FALLBACK_DURATION_MS = 50  # Estimated duration for heuristic fallback
+
+# Navigation context limits
+NAV_CONTEXT_MAX_CHARS = 2000  # Maximum characters for context in nav prompts
+NAV_SEARCH_RESULT_LIMIT = 20  # Maximum search results from index
+
+# File listing limits
+NAV_PYTHON_FILE_LIMIT = 50  # Maximum Python files to list for context
+
+# Token estimation for files
+NAV_TOKEN_MIN = 100  # Minimum estimated tokens for a file
+NAV_TOKEN_MAX = 5000  # Maximum estimated tokens for a file
+NAV_TOKEN_CHAR_RATIO = 4  # Characters per token estimate
 
 # Task routing confidence thresholds (0.0-1.0)
 TASK_HIGH_CONFIDENCE_THRESHOLD = 0.9
@@ -221,3 +247,54 @@ PLAN_CACHE_DAYS = 30  # Default cache duration for plan store
 # Step execution defaults
 STEP_DEFAULT_TIMEOUT_SECONDS = 300
 STEP_DEFAULT_MAX_RETRIES = 2
+
+# Safety guard defaults
+SAFETY_MAX_PATH_DEPTH = 10  # Maximum path depth for check_depth
+SAFETY_MAX_LIST_DEPTH = 3  # Default max_depth for scout_list
+SAFETY_MAX_FILE_SIZE_KB = 1024  # Maximum file size in KB for scout_read_file
+SAFETY_DEFAULT_COMMAND_TIMEOUT = 30  # Default timeout for scout_command (seconds)
+SAFETY_MAX_WAIT_SECONDS = 60  # Maximum wait time for scout_wait
+
+# Web step defaults
+WEBSTEP_DEFAULT_MAX_RETRIES = 1
+WEBSTEP_DEFAULT_TIMEOUT_SECONDS = 30
+
+# LLM prose parser defaults
+LLM_PARSER_DEFAULT_MAX_RETRIES = 3
+
+
+# =============================================================================
+# VS Code Extension Parser Defaults
+# =============================================================================
+
+# VS Code storage paths
+VSCODE_EXTENSIONS_PATH = ".vscode/extensions"
+VSCODE_GLOBAL_STORAGE = "globalStorage"
+VSCODE_WORKSPACE_STORAGE = "workspaceStorage"
+
+# Parser retry defaults
+PARSER_MAX_RETRIES = 3
+PARSER_RETRY_DELAY = 0.5  # seconds
+
+# Supported agents
+SUPPORTED_AGENTS = ["copilot", "cline", "continue"]
+
+# Agent identifiers
+AGENT_COPILOT = "copilot"
+AGENT_CLINE = "cline"
+AGENT_CONTINUE = "continue"
+
+# Copilot storage keys
+COPILOT_CHAT_SESSION_INDEX = "chat.ChatSessionStore.index"
+COPILOT_CHAT_SESSIONS_DIR = "chatSessions"
+
+# Cline storage keys
+CLINE_EXTENSION_ID = "saoudrizwan.claude-dev"
+CLINE_API_CONVERSATION_DIR = "tasks"
+CLINE_API_CONVERSATION_FILE = "api_conversation_history.json"
+CLINE_FALLBACK_FILE = "state.json"
+
+# Continue storage keys
+CONTINUE_CONFIG_DIR = ".continue"
+CONTINUE_SESSIONS_FILE = "sessions.json"
+CONTINUE_HISTORY_DB = "history.db"

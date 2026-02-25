@@ -11,33 +11,15 @@ Usage:
         HOTSPOT_WEIGHT_CHURN,
     )
 
-    # For ScoutConfig class (deprecated, use scout.app_config):
-    from scout.config import ScoutConfig
+    # For ScoutConfig class:
+    from scout.app_config import ScoutConfig
     config = ScoutConfig()
 """
 
 import warnings
+from typing import Any
 
-# Re-export ScoutConfig and get_global_semaphore from app_config for backward compatibility
-# TODO: Remove this warning after v0.2.0
-warnings.warn(
-    "Importing ScoutConfig and get_global_semaphore from scout.config is deprecated. "
-    "Use scout.app_config instead.",
-    DeprecationWarning,
-    stacklevel=2,
-)
-
-from scout.app_config import (
-    ScoutConfig,
-    get_global_semaphore,
-    HARD_MAX_HOURLY_BUDGET,
-    HARD_MAX_COST_PER_EVENT,
-    HARD_MAX_AUTO_ESCALATIONS,
-    TriggerConfig,
-    DEFAULT_CONFIG,
-    EnvLoader,
-)
-
+# Re-export all defaults from config.defaults (no warning needed)
 from scout.config.defaults import (
     # Budget defaults
     BUDGET_COST_PER_MILLION_8B,
@@ -61,7 +43,10 @@ from scout.config.defaults import (
 
     # Circuit breaker defaults
     CIRCUIT_BREAKER_FAILURE_THRESHOLD,
-    CIRCUIT_BREAKER_COOLDOWN_SECONDS,
+    CIRCUIT_BREAKER_SUCCESS_THRESHOLD,
+    CIRCUIT_BREAKER_TIMEOUT_SECONDS,
+    CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS,
+    CIRCUIT_BREAKER_PROVIDER_COOLDOWN_SECONDS,
 
     # Rate limiter defaults
     RATELIMIT_DEFAULT_RPM,
@@ -145,7 +130,90 @@ from scout.config.defaults import (
     PLAN_CACHE_DAYS,
     STEP_DEFAULT_TIMEOUT_SECONDS,
     STEP_DEFAULT_MAX_RETRIES,
+    # Safety guard defaults
+    SAFETY_MAX_PATH_DEPTH,
+    SAFETY_MAX_LIST_DEPTH,
+    SAFETY_MAX_FILE_SIZE_KB,
+    SAFETY_DEFAULT_COMMAND_TIMEOUT,
+    SAFETY_MAX_WAIT_SECONDS,
+    # Web step defaults
+    WEBSTEP_DEFAULT_MAX_RETRIES,
+    WEBSTEP_DEFAULT_TIMEOUT_SECONDS,
+    # LLM parser defaults
+    LLM_PARSER_DEFAULT_MAX_RETRIES,
+    # VS Code parser defaults
+    VSCODE_EXTENSIONS_PATH,
+    VSCODE_GLOBAL_STORAGE,
+    VSCODE_WORKSPACE_STORAGE,
+    PARSER_MAX_RETRIES,
+    PARSER_RETRY_DELAY,
+    SUPPORTED_AGENTS,
+    AGENT_COPILOT,
+    AGENT_CLINE,
+    AGENT_CONTINUE,
+    COPILOT_CHAT_SESSION_INDEX,
+    COPILOT_CHAT_SESSIONS_DIR,
+    CLINE_EXTENSION_ID,
+    CLINE_API_CONVERSATION_DIR,
+    CLINE_API_CONVERSATION_FILE,
+    CLINE_FALLBACK_FILE,
+    CONTINUE_CONFIG_DIR,
+    CONTINUE_SESSIONS_FILE,
+    CONTINUE_HISTORY_DB,
 )
+
+# Deprecated items that should be imported from scout.app_config instead
+_DEPRECATED_IMPORTS = {
+    "ScoutConfig",
+    "get_global_semaphore",
+    "HARD_MAX_HOURLY_BUDGET",
+    "HARD_MAX_COST_PER_EVENT",
+    "HARD_MAX_AUTO_ESCALATIONS",
+    "TriggerConfig",
+    "DEFAULT_CONFIG",
+    "EnvLoader",
+}
+
+# Cache for deprecated imports to avoid repeated imports
+_deprecated_cache: dict = {}
+
+
+def __getattr__(name: str) -> Any:
+    """Provide deprecation warnings only for specific deprecated imports."""
+    if name in _DEPRECATED_IMPORTS:
+        if name not in _deprecated_cache:
+            warnings.warn(
+                f"Importing {name} from scout.config is deprecated. "
+                f"Use scout.app_config.{name} instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            # Import and cache the deprecated item
+            from scout.app_config import (
+                ScoutConfig,
+                get_global_semaphore,
+                HARD_MAX_HOURLY_BUDGET,
+                HARD_MAX_COST_PER_EVENT,
+                HARD_MAX_AUTO_ESCALATIONS,
+                TriggerConfig,
+                DEFAULT_CONFIG,
+                EnvLoader,
+            )
+
+            _deprecated_cache.update({
+                "ScoutConfig": ScoutConfig,
+                "get_global_semaphore": get_global_semaphore,
+                "HARD_MAX_HOURLY_BUDGET": HARD_MAX_HOURLY_BUDGET,
+                "HARD_MAX_COST_PER_EVENT": HARD_MAX_COST_PER_EVENT,
+                "HARD_MAX_AUTO_ESCALATIONS": HARD_MAX_AUTO_ESCALATIONS,
+                "TriggerConfig": TriggerConfig,
+                "DEFAULT_CONFIG": DEFAULT_CONFIG,
+                "EnvLoader": EnvLoader,
+            })
+        return _deprecated_cache[name]
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     # Budget
@@ -168,7 +236,10 @@ __all__ = [
     "RETRY_JITTER_FACTOR",
     # Circuit breaker
     "CIRCUIT_BREAKER_FAILURE_THRESHOLD",
-    "CIRCUIT_BREAKER_COOLDOWN_SECONDS",
+    "CIRCUIT_BREAKER_SUCCESS_THRESHOLD",
+    "CIRCUIT_BREAKER_TIMEOUT_SECONDS",
+    "CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS",
+    "CIRCUIT_BREAKER_PROVIDER_COOLDOWN_SECONDS",
     # Rate limiter
     "RATELIMIT_DEFAULT_RPM",
     "RATELIMIT_DEFAULT_RPD",
@@ -243,7 +314,37 @@ __all__ = [
     "PLAN_CACHE_DAYS",
     "STEP_DEFAULT_TIMEOUT_SECONDS",
     "STEP_DEFAULT_MAX_RETRIES",
-    # Re-exports from app_config
+    # Safety guard defaults
+    "SAFETY_MAX_PATH_DEPTH",
+    "SAFETY_MAX_LIST_DEPTH",
+    "SAFETY_MAX_FILE_SIZE_KB",
+    "SAFETY_DEFAULT_COMMAND_TIMEOUT",
+    "SAFETY_MAX_WAIT_SECONDS",
+    # Web step defaults
+    "WEBSTEP_DEFAULT_MAX_RETRIES",
+    "WEBSTEP_DEFAULT_TIMEOUT_SECONDS",
+    # LLM parser defaults
+    "LLM_PARSER_DEFAULT_MAX_RETRIES",
+    # VS Code parser defaults
+    "VSCODE_EXTENSIONS_PATH",
+    "VSCODE_GLOBAL_STORAGE",
+    "VSCODE_WORKSPACE_STORAGE",
+    "PARSER_MAX_RETRIES",
+    "PARSER_RETRY_DELAY",
+    "SUPPORTED_AGENTS",
+    "AGENT_COPILOT",
+    "AGENT_CLINE",
+    "AGENT_CONTINUE",
+    "COPILOT_CHAT_SESSION_INDEX",
+    "COPILOT_CHAT_SESSIONS_DIR",
+    "CLINE_EXTENSION_ID",
+    "CLINE_API_CONVERSATION_DIR",
+    "CLINE_API_CONVERSATION_FILE",
+    "CLINE_FALLBACK_FILE",
+    "CONTINUE_CONFIG_DIR",
+    "CONTINUE_SESSIONS_FILE",
+    "CONTINUE_HISTORY_DB",
+    # Deprecated (still available but with warning)
     "ScoutConfig",
     "get_global_semaphore",
     "HARD_MAX_HOURLY_BUDGET",
