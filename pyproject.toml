@@ -48,9 +48,6 @@ docs = [
     "mkdocs-material>=9.0",
 ]
 
-[project.scripts]
-scout = "scout.cli_enhanced.main:main"
-
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"

@@ -109,12 +109,7 @@ def check_budget_with_message(
             print(f"   Model: {model}", file=sys.stderr)
         print("\n   Options:", file=sys.stderr)
         print("   1. Wait for next hour (resets at :00)", file=sys.stderr)
-        print(
-            "   2. Increase limit: python -m vivarium.scout config "
-            "--set limits.hourly_budget 1.0",
-            file=sys.stderr,
-        )
-        print("   3. Use --no-ai or --offline to skip LLM calls", file=sys.stderr)
+        print("   2. Use --no-ai or --offline to skip LLM calls", file=sys.stderr)
         return False
     return True
 
@@ -833,7 +828,7 @@ Respond with JSON only:
         """Heuristic: file is in public API directory."""
         try:
             rel = str(file.relative_to(self.repo_root))
-            return "runtime" in rel or rel.startswith("vivarium/") and "test" not in rel
+            return "runtime" in rel
         except ValueError:
             return False
 

@@ -3,8 +3,6 @@ Scout configuration — YAML + env vars + hard caps.
 
 User-controlled chaos with non-negotiable safety ceilings.
 Load order: ~/.scout/config.yaml < .scout/config.yaml < env vars < hard caps.
-
-TICKET-17: EnvLoader auto-loads .env for all Scout execution paths (tests, CLI).
 """
 
 from __future__ import annotations
@@ -22,8 +20,8 @@ class EnvLoader:
     """
     Auto-loads .env once, safely, idempotently.
 
-    TICKET-17: Ensures GROQ_API_KEY etc. are available for pytest and CLI
-    without manual 'source .env'. Uses setdefault — never overwrites existing
+    Ensures API keys are available for tests and CLI without manual
+    'source .env'. Uses setdefault — never overwrites existing
     env vars (cloud/deployment env > .env).
     """
 
@@ -108,11 +106,6 @@ DEFAULT_CONFIG = {
     "triggers": {
         "default": "on-commit",
         "patterns": [
-            {
-                "pattern": "vivarium/runtime/**/*.py",
-                "trigger": "on-save",
-                "max_cost": 0.02,
-            },
             {"pattern": "tests/**/*", "trigger": "manual"},
             {"pattern": "docs/**/*.md", "trigger": "disabled"},
         ],
@@ -161,7 +154,7 @@ DEFAULT_CONFIG = {
         "output_price": 0.0012,
     },
     "ui": {
-        "whimsy": False,  # TICKET-20: Cave man CEO mode (SCOUT_WHIMSY=1 overrides)
+        "whimsy": False,  # Fun mode: SCOUT_WHIMSY=1 overrides
     },
     "plan_locks": {
         "timeout": 30,     # Lock acquisition timeout in seconds
@@ -524,7 +517,7 @@ class ScoutConfig:
 
     @property
     def whimsy_mode(self) -> bool:
-        """TICKET-20: Cave man CEO mode. SCOUT_WHIMSY=1 or config ui.whimsy: true."""
+        """Fun mode. SCOUT_WHIMSY=1 or config ui.whimsy: true."""
         if os.environ.get("SCOUT_WHIMSY", "0") == "1":
             return True
         return bool(self.get("ui.whimsy"))

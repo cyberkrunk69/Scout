@@ -1,5 +1,8 @@
-"""Placeholder for Vivarium browser backend.
+"""Placeholder for browser backend implementation.
 
-This will be implemented when the browser package is fully extracted.
+This will be implemented when browser support is added.
 """
-raise NotImplementedError("Vivarium browser backend not yet available")
+raise ImportError(
+    "Browser backend is not available in this version. "
+    "This is a placeholder for future implementation."
+)
