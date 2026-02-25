@@ -10,16 +10,13 @@
 ## Executor
 
 ```{eval-rst}
-.. automodule:: scout.plan_executor
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: scout.execution.executor
    :members:
    :undoc-members:
    :show-inheritance:
 ```
+
+> **Note:** `scout.plan_executor` was removed in post-review cleanup (dead code).
 
 ## State Management
 

@@ -54,6 +54,9 @@ from scout.config.defaults import (
     NAV_TOKEN_CHAR_RATIO,
     TASK_HIGH_CONFIDENCE_THRESHOLD,
     TASK_LOW_CONFIDENCE_THRESHOLD,
+    NAV_ESTIMATED_COST,
+    NAV_COST_BUFFER,
+    NAV_CONFIDENCE_BOOST,
 )
 
 logger = logging.getLogger(__name__)
@@ -203,8 +206,8 @@ class TriggerRouter:
             for f in files
         )
         base_cost = token_estimate * COST_PER_MILLION_8B / 1_000_000
-        # Add 20% buffer for potential 70B escalations
-        return base_cost * 1.2
+        # Add buffer for potential 70B escalations
+        return base_cost * NAV_COST_BUFFER
 
     def on_file_save(self, path: Path) -> None:
         """Called by IDE integration or file watcher."""
@@ -496,7 +499,7 @@ class TriggerRouter:
                     base_confidence = NAV_INDEX_CONFIDENCE
                     # Boost confidence if there's a strong match in title
                     if title and task.lower() in title.lower():
-                        base_confidence = min(NAV_DEFAULT_CONFIDENCE, base_confidence + 10)
+                        base_confidence = min(NAV_DEFAULT_CONFIDENCE, base_confidence + NAV_CONFIDENCE_BOOST)
                     
                     # Create suggestion dict matching expected format
                     suggestion = {

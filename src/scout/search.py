@@ -21,6 +21,16 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from scout.config.defaults import (
+    BM25_BASE,
+    BM25_RANGE,
+    BM25_CLARITY_MAX,
+    BM25_EXACT_BOOST,
+    BM25_CLASS_BOOST,
+    SEARCH_CONFIDENCE_GAP_FACTOR,
+    SEARCH_CONFIDENCE_GAP_BASE,
+)
+
 
 # Type alias for configuration
 SearchConfig = Dict[str, Any]
@@ -326,9 +336,9 @@ class SearchIndex:
         """
         Compute confidence (0-100) using normalized score and gap-based clarity.
         """
-        base = 50 + (normalized * 30)
-        clarity = max(0, (gap_top2 ** 0.5) * 40 - 8)
-        clarity = min(clarity, 30)
+        base = BM25_BASE + (normalized * BM25_RANGE)
+        clarity = max(0, (gap_top2 ** 0.5) * SEARCH_CONFIDENCE_GAP_FACTOR - SEARCH_CONFIDENCE_GAP_BASE)
+        clarity = min(clarity, BM25_CLARITY_MAX)
         exact_boost = 1.03 if is_exact_match else 1.0
         kind_boost = 1.01 if kind == "class" else 1.0
         total = (base + clarity) * exact_boost * kind_boost

@@ -15,6 +15,12 @@ from pathlib import Path
 from typing import Any
 
 from scout.tool_output import ToolOutput
+from scout.config.defaults import (
+    FILE_READ_TIMEOUT,
+    FILE_WRITE_TIMEOUT,
+    FILE_DELETE_TIMEOUT,
+    FILE_EDIT_TIMEOUT,
+)
 
 # Simple passthrough decorator (replaces @log_tool_invocation)
 def log_tool_invocation(func):
@@ -77,7 +83,7 @@ def scout_read_file(
     ]
 
     try:
-        result = _run_command(cmd)
+        result = _run_command(cmd, timeout=FILE_READ_TIMEOUT)
         if result.returncode != 0:
             content = json.dumps(
                 {"status": "error", "message": result.stderr or "Failed to read file"}
@@ -151,7 +157,7 @@ async def scout_write_with_review(
             stderr=asyncio.subprocess.PIPE,
             env=os.environ.copy(),
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=300)
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=FILE_WRITE_TIMEOUT)
 
         if proc.returncode != 0:
             content = json.dumps(
@@ -236,7 +242,7 @@ async def scout_delete_with_review(
             stderr=asyncio.subprocess.PIPE,
             env=os.environ.copy(),
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=FILE_DELETE_TIMEOUT)
 
         if proc.returncode != 0:
             content = json.dumps(
@@ -347,7 +353,7 @@ async def scout_edit(
             stderr=asyncio.subprocess.PIPE,
             env=os.environ.copy(),
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=FILE_EDIT_TIMEOUT)
 
         output = stdout.decode() if stdout else ""
         error = stderr.decode() if stderr else ""

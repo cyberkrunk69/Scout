@@ -4,6 +4,8 @@ import asyncio
 import re
 from typing import Optional
 
+from scout.config.defaults import CLI_DISCOVERY_TIMEOUT
+
 # Cache of discovered CLI interfaces
 _CLI_CACHE: dict[str, dict] = {}
 
@@ -62,7 +64,7 @@ async def discover_cli_interface(command: str, venv_python: str) -> dict:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=CLI_DISCOVERY_TIMEOUT)
         help_text = stdout.decode() + stderr.decode()
     except Exception as e:
         return {"command": command, "error": str(e), "args": {}, "positional": []}

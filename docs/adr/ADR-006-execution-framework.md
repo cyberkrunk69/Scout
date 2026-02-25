@@ -208,17 +208,9 @@ PlanExecutor(
    
    **Ticket created:** `#TECH-DEBT-003` - Implement generate_undo_plan or remove stub
 
-2. **Non-browser steps skipped** in `src/scout/plan_executor.py:138-140`:
-   ```python
-   else:
-       # Non-browser step - skip for now or log warning
-       logger.warning(f"Skipping non-browser step: {step_dict.get('command')}")
-       continue
-   ```
-   
-   **Impact:** Only web browser actions are executed; file operations, git, etc. are silently skipped.
-   
-   **Recommendation:** Implement full action type support.
+> **Note:** The `plan_executor.py` module was removed in the post-review cleanup as dead code (not wired up). Browser automation support will be re-added when properly implemented.
+
+2. **Non-browser steps skipped** - This issue is now moot as plan_executor was removed.
 
 ### Magic Number Audit
 

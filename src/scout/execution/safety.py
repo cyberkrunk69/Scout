@@ -11,6 +11,7 @@ from scout.config.defaults import (
     SAFETY_MAX_FILE_SIZE_KB,
     SAFETY_DEFAULT_COMMAND_TIMEOUT,
     SAFETY_MAX_WAIT_SECONDS,
+    SAFETY_DEFAULT_SLEEP,
 )
 
 logger = logging.getLogger(__name__)
@@ -341,7 +342,7 @@ async def scout_wait(seconds: int = None, condition: str = None, condition_param
                 return {"success": True, "elapsed": elapsed, "condition_met": True}
 
             # Wait before next check
-            await asyncio.sleep(1)
+            await asyncio.sleep(SAFETY_DEFAULT_SLEEP)
 
         # Timeout reached
         elapsed = time.time() - start_time

@@ -122,6 +122,11 @@ BM25_CLARITY_MAX = 30
 BM25_EXACT_BOOST = 1.03
 BM25_CLASS_BOOST = 1.01
 
+# Search confidence gap calculation (for normalized confidence)
+# Formula: max(0, (gap ** 0.5) * 40 - 8)
+SEARCH_CONFIDENCE_GAP_FACTOR = 40  # Multiplier for gap square root
+SEARCH_CONFIDENCE_GAP_BASE = 8  # Base offset for gap calculation
+
 # Trust scoring defaults
 TRUST_DEFAULT_MIN_CONFIDENCE = 70
 
@@ -218,6 +223,11 @@ NAV_TOKEN_CHAR_RATIO = 4  # Characters per token estimate
 TASK_HIGH_CONFIDENCE_THRESHOLD = 0.9
 TASK_LOW_CONFIDENCE_THRESHOLD = 0.7
 
+# Navigation cost configuration
+NAV_ESTIMATED_COST = 0.01  # Default estimated cost for navigation
+NAV_COST_BUFFER = 1.2  # 20% buffer for cascade cost estimation
+NAV_CONFIDENCE_BOOST = 10  # Confidence boost for certain scenarios
+
 
 # =============================================================================
 # Execution & Plans Defaults
@@ -254,6 +264,7 @@ SAFETY_MAX_LIST_DEPTH = 3  # Default max_depth for scout_list
 SAFETY_MAX_FILE_SIZE_KB = 1024  # Maximum file size in KB for scout_read_file
 SAFETY_DEFAULT_COMMAND_TIMEOUT = 30  # Default timeout for scout_command (seconds)
 SAFETY_MAX_WAIT_SECONDS = 60  # Maximum wait time for scout_wait
+SAFETY_DEFAULT_SLEEP = 1  # Default sleep time for wait operations (seconds)
 
 # Web step defaults
 WEBSTEP_DEFAULT_MAX_RETRIES = 1
@@ -261,6 +272,20 @@ WEBSTEP_DEFAULT_TIMEOUT_SECONDS = 30
 
 # LLM prose parser defaults
 LLM_PARSER_DEFAULT_MAX_RETRIES = 3
+
+
+# =============================================================================
+# CLI & Tool Defaults
+# =============================================================================
+
+# CLI discovery timeout
+CLI_DISCOVERY_TIMEOUT = 10  # seconds
+
+# File operation timeouts
+FILE_READ_TIMEOUT = 300  # seconds (for scout_read_file)
+FILE_WRITE_TIMEOUT = 120  # seconds (for scout_write_file)
+FILE_DELETE_TIMEOUT = 120  # seconds (for scout_delete_file)
+FILE_EDIT_TIMEOUT = 120  # seconds (for scout_edit)
 
 
 # =============================================================================
