@@ -73,6 +73,8 @@ EVENT_TYPES = frozenset(
         "improvement_suggestion_accepted",
         "improvement_outcome",
         "improvement_applied",
+        # DataClaw enrichment events
+        "enrich",
     }
 )
 
@@ -553,3 +555,20 @@ def get_metrics_aggregator(window_seconds: int = 60) -> MetricsAggregator:
         if _metrics_aggregator is None:
             _metrics_aggregator = MetricsAggregator(AuditLog(), window_seconds)
         return _metrics_aggregator
+
+
+# =============================================================================
+# Global audit instance (lazy init)
+# =============================================================================
+
+_audit_instance: Optional[AuditLog] = None
+_audit_lock = threading.Lock()
+
+
+def get_audit() -> AuditLog:
+    """Get or create global AuditLog instance."""
+    global _audit_instance
+    with _audit_lock:
+        if _audit_instance is None:
+            _audit_instance = AuditLog()
+        return _audit_instance
