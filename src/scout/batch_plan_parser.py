@@ -1,3 +1,6 @@
+# TODO: This module is not yet integrated into the main application.
+# It is planned for future use as part of the Batch Pipeline framework.
+# See ADR-008 for design context.
 from __future__ import annotations
 """Parser for extracting structured steps from plan markdown output."""
 

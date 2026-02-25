@@ -1,3 +1,6 @@
+# TODO: This module is not yet integrated into the main application.
+# It is planned for future use as part of the Plan Execution framework.
+# See ADR-007 for design context.
 """Plan State Management with atomic locking.
 
 Provides disk-based state persistence for the dynamic re-synthesis planning engine:
@@ -218,7 +221,7 @@ class PlanStateManager:
         }
         
         # Atomic write: temp file + rename
-        async with self._sync_lock:
+        async with self._async_lock:
             temp_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
             temp_path.rename(final_path)  # Atomic on same filesystem
         

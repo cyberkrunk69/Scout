@@ -1,3 +1,6 @@
+# TODO: This module is not yet integrated into the main application.
+# It is planned for future use as part of the Plan Execution framework.
+# See ADR-007 for design context.
 """Plan store for caching web task plans.
 
 This module provides the PlanStore class for caching successful web automation
@@ -268,7 +271,7 @@ class PlanStore(TrustStore):
         column = "success_count" if success else "failure_count"
 
         # Validate column against whitelist (prevents SQL injection)
-        if column not in ALLOWED_COLUMNS:
+        if column not in self.ALLOWED_COLUMNS:
             raise ValueError(f"Invalid column name: {column}")
 
         async with self._lock:

@@ -1,3 +1,6 @@
+# TODO: This module is not yet integrated into the main application.
+# It is planned for future use as part of the Plan Execution framework.
+# See ADR-007 for design context.
 from __future__ import annotations
 #!/usr/bin/env python
 """

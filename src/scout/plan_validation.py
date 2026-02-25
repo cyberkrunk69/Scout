@@ -1,3 +1,6 @@
+# TODO: This module is not yet integrated into the main application.
+# It is planned for future use as part of the Plan Execution framework.
+# See ADR-007 for design context.
 """Plan Validation for re-synthesis consistency.
 
 Provides validation of re-synthesized plans against previous context:
