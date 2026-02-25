@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from scout.audit import get_audit
-from scout.config import get_global_semaphore
+from scout.app_config import get_global_semaphore
 from scout.llm.pricing import estimate_cost_usd
 
 logger = logging.getLogger(__name__)

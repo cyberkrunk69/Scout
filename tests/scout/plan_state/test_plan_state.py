@@ -45,7 +45,9 @@ class TestPlanStorage:
     def test_plan_store_creation(self):
         """Test creating a PlanStore instance."""
         from scout.plan_store import PlanStore
-        store = PlanStore()
+        from pathlib import Path
+        repo_root = Path("/tmp/test_repo")
+        store = PlanStore(repo_root=repo_root)
         assert store is not None
 
 

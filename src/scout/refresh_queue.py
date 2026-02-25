@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Set
 
-from scout.config import ScoutConfig
+from scout.app_config import ScoutConfig
 
 # Use standard logging only (structlog not compatible with keyword args in this context)
 logger = logging.getLogger(__name__)

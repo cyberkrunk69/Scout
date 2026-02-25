@@ -487,7 +487,7 @@ async def query_for_deps(changed_files: List[Path]) -> List[Path]:
     Shim for doc_sync.py — wraps DependencyGraph with lazy initialization.
     Properly async — must be awaited by callers.
     """
-    from scout.config import ScoutConfig
+    from scout.app_config import ScoutConfig
 
     config = ScoutConfig()
     repo_root = Path.cwd()  # ScoutConfig has no repo_root; use cwd
