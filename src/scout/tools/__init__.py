@@ -16,7 +16,8 @@ Each submodule exports tool functions that can be called directly.
 
 import functools
 import time
-from typing import Any, Callable
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from scout.audit import get_audit
 from scout.cache import simple_cache as _simple_cache
@@ -99,10 +100,6 @@ def log_tool_invocation(func: Callable[..., Any]) -> Callable[..., Any]:
 # =============================================================================
 # Tool Metadata for Execution Engine (Phase 3)
 # =============================================================================
-
-from enum import Enum
-from typing import TYPE_CHECKING, Optional
-
 
 class CostTier(str, Enum):
     """Cost tier for tool budgeting."""
@@ -564,6 +561,10 @@ __all__ = [
     # Decorators
     "simple_cache",
     "log_tool_invocation",
+    # Tool metadata
+    "CostTier",
+    "TOOL_METADATA",
+    "get_tool_metadata",
 ]
 
 
@@ -643,8 +644,8 @@ def register_all_tools(mcp: "FastMCP") -> None:
     mcp.add_tool(scout_batch)
     mcp.add_tool(scout_run)
 
-    # Analysis tools
-    mcp.add_tool(scout_hotspots)
+    # Analysis tools - requires analysis-utils to be merged
+    # mcp.add_tool(scout_hotspots)
 
 def get_tools_minimal():
     return [{"name": t, "desc": ""} for t in get_tools()]
