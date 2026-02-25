@@ -37,19 +37,8 @@ from scout.validator import ValidationResult, Validator
 
 # Import from new LLM infrastructure (Phase 2)
 from scout.llm.router import call_llm
-from scout.llm.cost import is_free_model
-from scout.llm.intent import IntentType, IntentResult
 
 logger = logging.getLogger(__name__)
-
-# Token cost estimates (8B: $0.20/million, 70B: ~$0.90/million)
-TOKENS_PER_SMALL_FILE = 500
-COST_PER_MILLION_8B = 0.20
-COST_PER_MILLION_70B = 0.90
-BRIEF_COST_PER_FILE = 0.005
-TASK_NAV_ESTIMATED_COST = 0.002  # 8B + retry + possible 70B escalation
-# Draft-only (commit_draft + pr_snippet per file): ~1k tokens × $0.20/M
-DRAFT_COST_PER_FILE = 0.0004
 
 
 class BudgetExhaustedError(RuntimeError):
@@ -952,29 +941,13 @@ Diff:
 Current documentation for changed symbols:
 {symbol_docs or "(none)"}
 """
-            response: Optional[Union[BigBrainResponse, NavResponse]] = None
-            if os.environ.get("GEMINI_API_KEY"):
-                try:
-                    response = await call_big_brain_async(
-                        prompt,
-                        system="Output only the commit message.",
-                        max_tokens=256,
-                        task_type="commit_draft",
-                    )
-                except Exception as bb_err:
-                    logger.debug(
-                        "Big brain failed for commit draft, falling back to Groq: %s",
-                        bb_err,
-                    )
-            if response is None:
-                result = await call_llm(
-                    prompt,
-                    task_type="simple",
-                    model="llama-3.1-8b-instant",
-                    system="Output only the commit message.",
-                    max_tokens=256,
-                )
-            assert result is not None  # guaranteed: big_brain or llm
+            result = await call_llm(
+                prompt,
+                task_type="simple",
+                model="llama-3.1-8b-instant",
+                system="Output only the commit message.",
+                max_tokens=256,
+            )
             draft_dir = self.repo_root / "docs" / "drafts"
             draft_dir.mkdir(parents=True, exist_ok=True)
             try:
@@ -997,7 +970,7 @@ Current documentation for changed symbols:
             logger.debug(
                 "_generate_commit_draft completed for file=%s cost=%s",
                 file,
-                response.cost_usd,
+                result.cost_usd,
             )
         except Exception as e:
             logger.warning(
@@ -1015,19 +988,11 @@ Current documentation for changed symbols:
     async def _generate_pr_snippet(self, file: Path, session_id: str) -> None:
         """Generate PR description snippet for the changed file.
 
-        Uses legacy path (call_big_brain_async / Groq). Gate is NOT used here:
-        PR context = full diff + full symbol_docs (.tldr.md + .deep.md) — can be 50KB+.
-        Gate expects raw_tldr_context (bounded). Feeding it novels would cost $$$ with
-        no benefit. Gate stays in answer_help_async only.
+        Uses call_llm for generating PR snippets.
         """
         import os
-        # TODO: Phase 2 - extract git_analyzer and big_brain modules
-        # from scout.git_analyzer import get_diff_for_file
-        # from scout.big_brain import call_big_brain_async
-        return  # Stub
-        # TODO: Phase 2 - extract llm module
-        # from scout.llm.router import call_llm
-        raise ImportError("LLM not yet available - Phase 2")
+        # Import git_analyzer for getting diffs
+        from scout.git_analyzer import get_diff_for_file
 
         diff = get_diff_for_file(file, staged_only=True, repo_root=self.repo_root)
         if not diff.strip():
@@ -1043,22 +1008,14 @@ Current documentation for changed symbols:
 {symbol_docs or "(none)"}
 
 Output only the snippet, no preamble."""
-        response: Union[BigBrainResponse, NavResponse]
-        if os.environ.get("GEMINI_API_KEY"):
-            response = await call_big_brain_async(
-                prompt,
-                system="Documentation assistant. Be concise.",
-                max_tokens=256,
-                task_type="pr_snippet",
-            )
-        else:
-            result = await call_llm(
-                prompt,
-                task_type="simple",
-                model="llama-3.1-8b-instant",
-                system="Documentation assistant. Be concise.",
-                max_tokens=256,
-            )
+
+        result = await call_llm(
+            prompt,
+            task_type="simple",
+            model="llama-3.1-8b-instant",
+            system="Documentation assistant. Be concise.",
+            max_tokens=256,
+        )
         draft_dir = self.repo_root / "docs" / "drafts"
         draft_dir.mkdir(parents=True, exist_ok=True)
         try:
@@ -1080,13 +1037,8 @@ Output only the snippet, no preamble."""
     async def _generate_impact_summary(self, file: Path, session_id: str) -> None:
         """Generate impact analysis summary for the changed file."""
         import os
-        # TODO: Phase 2 - extract git_analyzer and big_brain modules
-        # from scout.git_analyzer import get_diff_for_file
-        # from scout.big_brain import call_big_brain_async
-        return  # Stub
-        # TODO: Phase 2 - extract llm module
-        # from scout.llm.router import call_llm
-        raise ImportError("LLM not yet available - Phase 2")
+        # Import git_analyzer for getting diffs
+        from scout.git_analyzer import get_diff_for_file
 
         diff = get_diff_for_file(file, staged_only=True, repo_root=self.repo_root)
         if not diff.strip():
@@ -1103,22 +1055,14 @@ Current documentation for changed symbols:
 
 Provide a brief impact analysis (2-5 bullet points): What could break?
 Who is affected? Configuration changes? Output only the analysis, no preamble."""
-        response: Union[BigBrainResponse, NavResponse]
-        if os.environ.get("GEMINI_API_KEY"):
-            response = await call_big_brain_async(
-                prompt,
-                system="Documentation assistant. Be concise.",
-                max_tokens=256,
-                task_type="impact_summary",
-            )
-        else:
-            result = await call_llm(
-                prompt,
-                task_type="verification",
-                model="llama-3.1-8b-instant",
-                system="Documentation assistant. Be concise.",
-                max_tokens=256,
-            )
+
+        result = await call_llm(
+            prompt,
+            task_type="verification",
+            model="llama-3.1-8b-instant",
+            system="Documentation assistant. Be concise.",
+            max_tokens=256,
+        )
         draft_dir = self.repo_root / "docs" / "drafts"
         draft_dir.mkdir(parents=True, exist_ok=True)
         try:
