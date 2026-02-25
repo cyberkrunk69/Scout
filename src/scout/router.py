@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Callable, List, Optional, Union
 
 from scout.audit import AuditLog
-from scout.config import (
+from scout.app_config import (
     ScoutConfig,
     get_global_semaphore,
     HARD_MAX_HOURLY_BUDGET,
