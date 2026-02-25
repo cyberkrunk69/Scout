@@ -23,32 +23,22 @@ from scout.config import (
     HARD_MAX_HOURLY_BUDGET,
 )
 from scout.ignore import IgnorePatterns
+from scout.llm.budget import (
+    BRIEF_COST_PER_FILE,
+    COST_PER_MILLION_8B,
+    COST_PER_MILLION_70B,
+    DRAFT_COST_PER_FILE,
+    TASK_NAV_ESTIMATED_COST,
+    TOKENS_PER_SMALL_FILE,
+)
+from scout.llm.cost import is_free_model
+from scout.llm.intent import IntentResult, IntentType
 from scout.validator import ValidationResult, Validator
 
-# TODO: These imports are from modules not yet extracted (Phase 2)
-# from scout.big_brain import BigBrainResponse
-# from scout.llm import NavResponse
-# from scout.llm.cost import is_free_model
-# from scout.intent import IntentType
-
-# Stub for IntentType (will be replaced with real import in Phase 2)
-class IntentType:
-    QUERY_CODE = "query_code"
-    TEST = "test"
-    DOCUMENT = "document"
-    IMPLEMENT_FEATURE = "implement_feature"
-    FIX_BUG = "fix_bug"
-    REFACTOR = "refactor"
-    OPTIMIZE = "optimize"
-
-class IntentResult:
-    """Stub for intent classification result."""
-    def __init__(self, intent_type: IntentType, confidence: float, target: str, metadata: dict = None, clarifying_questions: list = None):
-        self.intent_type = intent_type
-        self.confidence = confidence
-        self.target = target
-        self.metadata = metadata or {}
-        self.clarifying_questions = clarifying_questions or []
+# Import from new LLM infrastructure (Phase 2)
+from scout.llm.router import call_llm
+from scout.llm.cost import is_free_model
+from scout.llm.intent import IntentType, IntentResult
 
 logger = logging.getLogger(__name__)
 
@@ -591,10 +581,7 @@ class TriggerRouter:
             )
             return None
 
-        # TODO: Phase 2 - extract llm module
-        # from scout.llm.router import call_llm
-        raise ImportError("LLM not yet available - Phase 2")
-
+        # Log the trigger event and proceed with LLM call
         self.audit.log(
             "trigger",
             event="manual",
@@ -920,13 +907,8 @@ Respond with JSON only:
     async def _generate_commit_draft(self, file: Path, session_id: str) -> None:
         """Generate conventional commit message draft for staged changes."""
         import os
-        # TODO: Phase 2 - extract git_analyzer and big_brain modules
-        # from scout.git_analyzer import get_diff_for_file
-        # from scout.big_brain import call_big_brain_async
-        return  # Stub
-        # TODO: Phase 2 - extract llm module
-        # from scout.llm.router import call_llm
-        raise ImportError("LLM not yet available - Phase 2")
+        # Import git_analyzer for getting diffs
+        from scout.git_analyzer import get_diff_for_file
 
         # Ensure session_id is valid (audit has _get_session_id fallback)
         eff_session_id = session_id or str(uuid.uuid4())[:8]
