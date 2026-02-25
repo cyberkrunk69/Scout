@@ -8,6 +8,8 @@
 [![Documentation Status](https://img.shields.io/readthedocs/scout-core)](https://scout-core.readthedocs.io/)
 
 **Status:** Pre-release (alpha). Core modules are stable; browser support and CLI are still under development.
+I little piece of the scout / vivarium ecosystem made for use with "other" services. 
+Idk if it works.. going to bed. will check tomorrow around 1pm lol.
 
 LLM routing, validation, and audit layer for AI-assisted development.
 
