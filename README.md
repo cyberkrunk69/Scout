@@ -54,6 +54,9 @@ print(results)
 - [Getting Started](https://scout-core.readthedocs.io/) - Full documentation
 - [API Reference](https://scout-core.readthedocs.io/api/scout.html) - Auto-generated API docs
 - [Guides](https://scout-core.readthedocs.io/guides/) - How-to guides
+  - [Batch Pipeline](docs/guides/batch_pipeline.md) - Parallel and sequential task execution
+  - [Plan Execution](docs/guides/plan_execution.md) - Structured plan execution with dependencies
+  - [Configuration](docs/guides/configuration.md) - Configuring Scout Core
 - [Architecture Decision Records](docs/adr/index.md) - Design decisions and rationale
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute
 

@@ -190,6 +190,8 @@ class LlmProseParser:
             except (asyncio.TimeoutError, TimeoutError, LLMError) as e:
                 self.logger.warning(f"Attempt {attempt + 1}/{self.max_retries} failed: {e}")
                 if attempt < self.max_retries - 1:
+                    # Exponential backoff: 1s, 2s, 4s, ... (doubles each attempt)
+                    # Formula: 2^attempt gives delay in seconds
                     sleep_time = 2 ** attempt
                     self.logger.info(f"Retrying in {sleep_time}s...")
                     time.sleep(sleep_time)
@@ -203,6 +205,7 @@ class LlmProseParser:
             except Exception as e:
                 self.logger.error(f"Unexpected error on attempt {attempt + 1}: {type(e).__name__}: {e}")
                 if attempt < self.max_retries - 1:
+                    # Exponential backoff: 1s, 2s, 4s, ... (doubles each attempt)
                     sleep_time = 2 ** attempt
                     time.sleep(sleep_time)
                 else:

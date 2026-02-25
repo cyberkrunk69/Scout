@@ -10,13 +10,14 @@ from pathlib import Path
 from typing import Any, Optional
 
 from scout.audit import AuditLog
+from scout.config import HOTSPOT_WEIGHT_CHURN, HOTSPOT_WEIGHT_ERROR, HOTSPOT_WEIGHT_IMPACT
 from scout.graph import impact_analysis
 
 
-# Default weights for hotspot score calculation
-DEFAULT_CHURN_WEIGHT = 0.4
-DEFAULT_ERROR_WEIGHT = 0.4
-DEFAULT_IMPACT_WEIGHT = 0.2
+# Aliases for backwards compatibility - import from scout.config instead
+DEFAULT_CHURN_WEIGHT = HOTSPOT_WEIGHT_CHURN
+DEFAULT_ERROR_WEIGHT = HOTSPOT_WEIGHT_ERROR
+DEFAULT_IMPACT_WEIGHT = HOTSPOT_WEIGHT_IMPACT
 
 # Error event types to track
 ERROR_EVENT_TYPES = frozenset({"validation_fail", "llm_error", "llm_retry", "node_failed"})

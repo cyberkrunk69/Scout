@@ -48,6 +48,7 @@ from scout.config.defaults import (
     NAV_FALLBACK_DURATION_MS,
     NAV_CONTEXT_MAX_CHARS,
     NAV_SEARCH_RESULT_LIMIT,
+    NAV_LINE_ESTIMATE_SEARCH_LIMIT,
     NAV_PYTHON_FILE_LIMIT,
     NAV_TOKEN_MIN,
     NAV_TOKEN_MAX,
@@ -489,7 +490,7 @@ class TriggerRouter:
                         content_lower = content.lower()
                         for prefix in ["def ", "class ", "async def "]:
                             idx = content_lower.find(prefix)
-                            if idx >= 0 and idx < 200:  # Within first 200 chars
+                            if idx >= 0 and idx < NAV_LINE_ESTIMATE_SEARCH_LIMIT:
                                 # Rough line estimation
                                 line_estimate = max(1, content[:idx].count("\n") + 1)
                                 break

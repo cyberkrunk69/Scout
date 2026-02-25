@@ -210,6 +210,7 @@ NAV_FALLBACK_DURATION_MS = 50  # Estimated duration for heuristic fallback
 # Navigation context limits
 NAV_CONTEXT_MAX_CHARS = 2000  # Maximum characters for context in nav prompts
 NAV_SEARCH_RESULT_LIMIT = 20  # Maximum search results from index
+NAV_LINE_ESTIMATE_SEARCH_LIMIT = 200  # Max chars to search for function/class definition
 
 # File listing limits
 NAV_PYTHON_FILE_LIMIT = 50  # Maximum Python files to list for context
