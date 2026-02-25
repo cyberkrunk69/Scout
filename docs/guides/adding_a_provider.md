@@ -437,9 +437,9 @@ class CircuitBreaker:
 
 ## Retry Logic
 
-The retry system provides exponential backoff with budget and audit support. It's implemented in `scout/llmtry.py`.
+The retry system provides exponential backoff with budget and audit support. It's implemented in `scout/llm/retry.py`.
 
-###/re Using call_with_retries
+### Using call_with_retries
 
 ```python
 from scout.llm.retry import call_with_retries, LLMCallContext
