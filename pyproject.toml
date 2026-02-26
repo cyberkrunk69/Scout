@@ -31,6 +31,8 @@ dependencies = [
     "aiofiles>=23.0.0",
     "numpy>=1.24.0",
     "watchdog>=4.0.0",
+    "rich>=13.0",
+    "prompt-toolkit>=3.0",
 ]
 
 [project.optional-dependencies]
