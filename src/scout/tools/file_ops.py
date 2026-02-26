@@ -15,17 +15,13 @@ from pathlib import Path
 from typing import Any
 
 from scout.tool_output import ToolOutput
+from scout.tools import log_tool_invocation
 from scout.config.defaults import (
     FILE_READ_TIMEOUT,
     FILE_WRITE_TIMEOUT,
     FILE_DELETE_TIMEOUT,
     FILE_EDIT_TIMEOUT,
 )
-
-# Simple passthrough decorator (replaces @log_tool_invocation)
-def log_tool_invocation(func):
-    """Passthrough decorator - logging handled by audit.py."""
-    return func
 
 # Shared configuration
 VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"

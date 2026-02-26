@@ -15,11 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from scout.tool_output import ToolOutput
-
-# Simple passthrough decorator (replaces @log_tool_invocation)
-def log_tool_invocation(func):
-    """Passthrough decorator - logging handled by audit.py."""
-    return func
+from scout.tools import log_tool_invocation
 
 # Shared configuration
 VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"

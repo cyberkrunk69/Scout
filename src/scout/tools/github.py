@@ -15,17 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from scout.tool_output import ToolOutput
-
-# Simple passthrough decorator (replaces @simple_cache and @log_tool_invocation)
-def simple_cache(ttl_seconds: int = 60, dependencies: list = None):
-    """Passthrough decorator - cache functionality not yet implemented."""
-    def decorator(func):
-        return func
-    return decorator
-
-def log_tool_invocation(func):
-    """Passthrough decorator - logging handled by audit.py."""
-    return func
+from scout.tools import log_tool_invocation, simple_cache
 
 # Shared configuration
 VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"
