@@ -16,7 +16,7 @@ from scout.doc_generation import (
     DocGenerator,
     OutputFormat,
 )
-from scout.scout_mcp_logging import log_tool_invocation
+from scout.tools import log_tool_invocation
 from scout.tool_output import ToolOutput
 
 # Shared configuration
