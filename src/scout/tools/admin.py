@@ -487,7 +487,7 @@ async def scout_ci_guard(
     require_draft_events: bool = False,
     draft_events_hours: int = 24,
     no_placeholders_check: bool = False,
-    placeholders_target: str = "vivarium",
+    placeholders_target: str = "scout",
     json_output: bool = True,
     ctx: Any = None,
 ) -> ToolOutput:
@@ -504,7 +504,7 @@ async def scout_ci_guard(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.ci_guard",
+        "scout.cli.ci_guard",
     ]
 
     cmd.extend(["--base-branch", base_branch])
@@ -517,7 +517,7 @@ async def scout_ci_guard(
         cmd.extend(["--draft-events-hours", str(draft_events_hours)])
     if no_placeholders_check:
         cmd.append("--no-placeholders-check")
-    if placeholders_target != "vivarium":
+    if placeholders_target != "scout":
         cmd.extend(["--placeholders-target", placeholders_target])
     if json_output:
         cmd.append("--json")
