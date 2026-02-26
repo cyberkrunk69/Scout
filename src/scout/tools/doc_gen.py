@@ -18,9 +18,7 @@ from scout.doc_generation import (
 )
 from scout.tools import log_tool_invocation
 from scout.tool_output import ToolOutput
-
-# Shared configuration
-REPO_ROOT = Path("/Users/vivariumenv1/Vivarium")
+from scout.config.paths import REPO_ROOT
 
 
 @simple_cache(ttl_seconds=300, dependencies=[])

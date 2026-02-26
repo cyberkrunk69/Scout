@@ -26,10 +26,7 @@ from typing import Any
 
 from scout.tools import log_tool_invocation
 from scout.tool_output import ToolOutput
-
-# Shared configuration
-VENV_PYTHON = "/Users/vivariumenv1/GITHUBS/scout/venv/bin/python"
-REPO_ROOT = Path("/Users/vivariumenv1/GITHUBS/scout")
+from scout.config.paths import REPO_ROOT, VENV_PYTHON
 
 
 def _run_command(
@@ -737,9 +734,6 @@ async def scout_batch_modify_decorator(
 # =============================================================================
 
 
-REPO_ROOT = Path("/Users/vivariumenv1/GITHUBS/scout")
-
-
 @log_tool_invocation
 async def scout_search_docs(
     query: str = "",
@@ -762,7 +756,7 @@ async def scout_search_docs(
     Example:
         scout_search_docs(query="how does config work")
     """
-    from scout.cli.index import index_docs, search_docs, _db_path
+    from scout.cli.index import index_docs, search_docs
     from pathlib import Path
 
     repo_root = REPO_ROOT

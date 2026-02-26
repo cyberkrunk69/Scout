@@ -22,10 +22,7 @@ from scout.config.defaults import (
     FILE_DELETE_TIMEOUT,
     FILE_EDIT_TIMEOUT,
 )
-
-# Shared configuration
-VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"
-REPO_ROOT = Path("/Users/vivariumenv1/Vivarium")
+from scout.config.paths import REPO_ROOT, VENV_PYTHON
 
 
 def _run_command(

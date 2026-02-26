@@ -21,10 +21,7 @@ from typing import Any
 from scout.cache import simple_cache
 from scout.tools import log_tool_invocation
 from scout.tool_output import ToolOutput
-
-# Shared configuration
-VENV_PYTHON = "/Users/vivariumenv1/GITHUBS/scout/.venv/bin/python"
-REPO_ROOT = Path("/Users/vivariumenv1/GITHUBS/scout")
+from scout.config.paths import REPO_ROOT, VENV_PYTHON
 
 
 def _run_command(

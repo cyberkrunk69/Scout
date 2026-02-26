@@ -33,9 +33,7 @@ def _log_invocation(func: F) -> F:
     """Passthrough decorator - logs handled by audit.py."""
     return func
 
-# Shared configuration
-VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"
-REPO_ROOT = Path("/Users/vivariumenv1/Vivarium")
+from scout.config.paths import REPO_ROOT, VENV_PYTHON
 
 
 def _run_command(
