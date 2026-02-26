@@ -330,7 +330,7 @@ async def scout_edit(
         cmd = [
             VENV_PYTHON,
             "-m",
-            "vivarium.scout.cli_enhanced.commands.edit",
+            "scout.cli.commands.edit",
             str(path),
             "--prompt",
             instruction,

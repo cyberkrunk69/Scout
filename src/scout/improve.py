@@ -666,7 +666,7 @@ async def _get_diff_preview(file_path: Path, instruction: str) -> dict[str, Any]
     Returns:
         Dict with 'diff' key containing the unified diff
     """
-    from scout.cli_enhanced.mcp_bridge.client import get_mcp_client
+    from scout.cli.mcp_bridge.client import get_mcp_client
 
     client = get_mcp_client()
     result = await client.call_tool("scout_edit", {
@@ -700,7 +700,7 @@ async def _apply_edit_via_scout(file_path: Path, instruction: str) -> dict[str, 
     Returns:
         Dict with 'status', 'result', or 'error'
     """
-    from scout.cli_enhanced.mcp_bridge.client import get_mcp_client
+    from scout.cli.mcp_bridge.client import get_mcp_client
 
     client = get_mcp_client()
     result = await client.call_tool("scout_edit", {
