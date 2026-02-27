@@ -15,15 +15,8 @@ from pathlib import Path
 from typing import Any
 
 from scout.tool_output import ToolOutput
-
-# Simple passthrough decorator (replaces @log_tool_invocation)
-def log_tool_invocation(func):
-    """Passthrough decorator - logging handled by audit.py."""
-    return func
-
-# Shared configuration
-VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"
-REPO_ROOT = Path("/Users/vivariumenv1/Vivarium")
+from scout.tools import log_tool_invocation
+from scout.config.paths import REPO_ROOT, VENV_PYTHON
 
 
 def _run_command(
@@ -77,7 +70,7 @@ async def scout_batch(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.pipeline",
+        "scout.cli.main",
         "--tasks",
         tasks_json,
     ]
@@ -159,7 +152,7 @@ async def scout_run(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.run",
+        "scout.cli.main",
         "--module",
         module,
     ]

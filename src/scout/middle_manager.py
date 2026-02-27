@@ -15,11 +15,11 @@ from pathlib import Path
 from typing import Any, Callable, List, Literal, Optional, Protocol
 
 from scout.audit import AuditLog
+from scout.raw_briefs import store_raw_brief
 from scout.deps import SymbolRef
 
-# TODO: These modules not yet extracted (Phase 2)
-# from scout.raw_briefs import store_raw_brief
-# from scout.adaptive_engine.gates import ThresholdGate, GateDecision
+# Import Adaptive Engine components
+from scout.adaptive_engine.gates import ThresholdGate, GateDecision
 
 
 class _DummyDepsGraph:
@@ -330,13 +330,12 @@ class MiddleManagerGate:
         embedded_checksum = match.group(1)
 
         try:
-            # TODO: Phase 2 - extract doc_sync module
-            # from scout.doc_sync.ast_facts import ASTFactExtractor
-            # current_facts = ASTFactExtractor().extract(source_path)
-            # if embedded_checksum != current_facts.checksum():
-            #     logger.warning("Checksum mismatch: %s stale (AST changed)", doc_path)
-            #     return False
-            pass
+            from scout.doc_sync.ast_facts import ASTFactExtractor
+
+            current_facts = ASTFactExtractor().extract(source_path)
+            if embedded_checksum != current_facts.checksum():
+                logger.warning("Checksum mismatch: %s stale (AST changed)", doc_path)
+                return False
         except Exception as e:
             logger.warning("Could not validate doc freshness for %s: %s", doc_path, e)
             return False
@@ -559,32 +558,33 @@ YOUR RESPONSE (must include confidence_score and gaps/verified):"""
                         )
                         _query_symbols = new_symbols
                         # TICKET-43: Load more FACTS (never prose)
-                        # TODO: Phase 2 - extract context module
-                        # from scout.context import hydrate_facts
-                        # extra_facts = await hydrate_facts(
-                        #     symbols_to_expand,
-                        #     deps_graph or _DummyDepsGraph(_repo_root),
-                        #     _repo_root,
-                        #     max_facts=30,
-                        #     max_depth=1,
-                        # )
-                        # if extra_facts.symbols:
-                        #     extra = extra_facts.to_prompt(max_chars=8000)
-                        #     expanded_context = current_context + "\n\n---\n\n" + extra
-                        #     if len(expanded_context) > MAX_EXPANDED_CONTEXT:
-                        #         logger.warning(
-                        #             "Expanded context too large — truncating"
-                        #         )
-                        #         expanded_context = expanded_context[:MAX_EXPANDED_CONTEXT]
-                        #     current_context = expanded_context
-                        #     expansion_depth -= 1
-                        #     logger.info(
-                        #         "Gate: confidence %.2f → expand (%d symbols) → retry",
-                        #         parsed.confidence_score,
-                        #         len(symbols_to_expand),
-                        #     )
-                        #     continue  # retry with expanded context
-                        pass
+                        from scout.context import hydrate_facts
+
+                        extra_facts = await hydrate_facts(
+                            symbols_to_expand,
+                            deps_graph or _DummyDepsGraph(_repo_root),
+                            _repo_root,
+                            max_facts=30,
+                            max_depth=1,
+                        )
+                        if extra_facts.symbols:
+                            extra = extra_facts.to_prompt(max_chars=8000)
+                            expanded_context = current_context + "\n\n---\n\n" + extra
+                            if len(expanded_context) > MAX_EXPANDED_CONTEXT:
+                                logger.warning(
+                                    "Expanded context too large — truncating"
+                                )
+                                expanded_context = expanded_context[
+                                    :MAX_EXPANDED_CONTEXT
+                                ]
+                            current_context = expanded_context
+                            expansion_depth -= 1
+                            logger.info(
+                                "Gate: confidence %.2f → expand (%d symbols) → retry",
+                                parsed.confidence_score,
+                                len(symbols_to_expand),
+                            )
+                            continue  # retry with expanded context
                 elif (
                     expansion_depth > 0 and parsed.gaps and _repo_root and not use_facts
                 ):
@@ -668,19 +668,16 @@ YOUR RESPONSE (must include confidence_score and gaps/verified):"""
             cost = getattr(resp, "cost_usd", 0.0) or 0.0
             return content, cost
 
-        # TODO: Phase 2 - extract llm module
-        # from scout.llm.router import call_llm
-        # result = await call_llm(
-        #     prompt,
-        #     task_type="simple",
-        #     model=GROQ_70B_MODEL,
-        #     system="You output structured responses. Always include confidence_score and gaps.",
-        #     max_tokens=1024,
-        # )
-        # content = getattr(resp, "content", str(resp)).strip()
-        # cost = getattr(resp, "cost_usd", 0.0) or 0.0
-        # return content, cost
-        raise ImportError("LLM not yet available - Phase 2")
+        from scout.llm.router import call_llm
+
+        result = await call_llm(
+            prompt,
+            task_type="simple",
+            model=GROQ_70B_MODEL,
+            system="You output structured responses. Always include confidence_score and gaps.",
+            max_tokens=1024,
+        )
+        return result.content.strip(), result.cost_usd
 
 
 # Scout: truth-preserving funnel — shipped Feb 13 2026

@@ -16,21 +16,8 @@ from typing import Any
 
 
 from scout.tool_output import ToolOutput
-
-# Simple passthrough decorator (replaces @simple_cache and @log_tool_invocation)
-def simple_cache(ttl_seconds: int = 60, dependencies: list = None):
-    """Passthrough decorator - cache functionality not yet implemented."""
-    def decorator(func):
-        return func
-    return decorator
-
-def log_tool_invocation(func):
-    """Passthrough decorator - logging handled by audit.py."""
-    return func
-
-# Shared configuration
-VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"
-REPO_ROOT = Path("/Users/vivariumenv1/Vivarium")
+from scout.tools import log_tool_invocation, simple_cache
+from scout.config.paths import REPO_ROOT, VENV_PYTHON
 
 
 def _run_command(
@@ -81,7 +68,7 @@ def scout_lint(
     Returns:
         ToolOutput with tool_name="lint", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.lint"]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "lint"]
 
     if path and path != ".":
         cmd.append(path)
@@ -137,12 +124,12 @@ def scout_validate_module(
     """
     Run type checking (mypy) and tests (pytest) on a module.
 
-    Example: `scout_validate_module(module_path="vivarium/scout/cli/audit.py")`
+    Example: `scout_validate_module(module_path="scout/cli/main.py")`
 
     Returns:
         ToolOutput with tool_name="validate_module", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.validate", "--module", module_path]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "validate", "--module", module_path]
 
     if not type_check:
         cmd.append("--no-type-check")
@@ -199,7 +186,7 @@ def scout_env(
     Returns:
         ToolOutput with tool_name="env", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.env"]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "config"]
 
     if vars:
         cmd.extend(vars)
@@ -250,19 +237,17 @@ def scout_function_info(
     - Returns signature, docstring, source file, and line number
     - Includes truncated source code for quick reference
 
-    Example: `scout_function_info(module="vivarium.scout.llm.minimax", function="call_minimax_async")`
+    Example: `scout_function_info(module="scout.llm.minimax", function="call_minimax_async")`
 
     Returns:
         ToolOutput with tool_name="function_info", content=result_string, cost_usd=0.0
     """
+    # Note: function_info command not yet implemented in scout.cli.main
+    # This tool provides a stub until implemented
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.function_info",
-        "--module",
-        module,
-        "--function",
-        function,
+        "scout.cli.main",
     ]
 
     if json_output:

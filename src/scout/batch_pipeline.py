@@ -5,7 +5,7 @@ from __future__ import annotations
 """Pipeline executor for stateful batch operations.
 
 Self-Healing Features:
-- Progress reporting with whimsy (following vivarium/scout/ui/whimsy.py patterns)
+- Progress reporting with whimsy (following scout/ui/whimsy.py patterns)
 - Circuit breaker pattern for failure detection
 - Retry with exponential backoff
 - Dependency-aware parallel execution
@@ -209,7 +209,7 @@ class PipelineExecutor:
             # Handle extract_steps - auto-spawn sub-batch from plan output
             if task.get("extract_steps") and result.get("output"):
                 # Lazy import to avoid circular dependency
-                from vivarium.scout.batch_subbatch import SubBatchOrchestrator
+                from scout.batch_subbatch import SubBatchOrchestrator
                 sub_orchestrator = SubBatchOrchestrator()
                 sub_result = await sub_orchestrator.execute_plan_steps(
                     plan_output=result["output"],

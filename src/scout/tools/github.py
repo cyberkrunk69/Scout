@@ -15,21 +15,8 @@ from pathlib import Path
 from typing import Any
 
 from scout.tool_output import ToolOutput
-
-# Simple passthrough decorator (replaces @simple_cache and @log_tool_invocation)
-def simple_cache(ttl_seconds: int = 60, dependencies: list = None):
-    """Passthrough decorator - cache functionality not yet implemented."""
-    def decorator(func):
-        return func
-    return decorator
-
-def log_tool_invocation(func):
-    """Passthrough decorator - logging handled by audit.py."""
-    return func
-
-# Shared configuration
-VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"
-REPO_ROOT = Path("/Users/vivariumenv1/Vivarium")
+from scout.tools import log_tool_invocation, simple_cache
+from scout.config.paths import REPO_ROOT, VENV_PYTHON
 
 
 def _run_command(
@@ -291,7 +278,7 @@ async def scout_pr(
     if not body:
         git_context = _gather_pr_context_deep(base_branch)
 
-        from vivarium.scout.llm.minimax import call_minimax_async_detailed
+        from scout.llm.minimax import call_minimax_async_detailed
 
         body_prompt = f"""Generate a PR description for:
 

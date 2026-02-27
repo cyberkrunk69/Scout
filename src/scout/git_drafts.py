@@ -230,7 +230,7 @@ def assemble_pr_description_from_docs(
 
     Args:
         repo_root: Repository root path.
-        target_path: Path to package/module (e.g. vivarium/scout). .docs/ is
+        target_path: Path to package/module (e.g. scout). .docs/ is
             resolved as (repo_root / target_path) / ".docs".
         include_call_graph: If True, appends call graph summary when available.
 
@@ -269,9 +269,9 @@ def assemble_pr_description_from_docs(
     raw = "\n\n---\n\n".join(sections)
 
     if include_call_graph:
-        # Prefer call graph at vivarium/.docs; fallback to target/.docs
+        # Prefer call graph at .docs; fallback to target/.docs
         for cg_candidate in [
-            root / "vivarium" / ".docs" / "call_graph.json",
+            root / ".docs" / "call_graph.json",
             docs_dir / "call_graph.json",
         ]:
             if cg_candidate.exists():

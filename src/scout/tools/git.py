@@ -18,7 +18,7 @@ from typing import Any, Callable, TypeVar
 
 from scout.tool_output import ToolOutput
 
-# Simple passthrough decorator (replaces @simple_cache from vivarium)
+# Simple passthrough decorator (replaces @simple_cache)
 # Cache functionality can be added later if needed
 def simple_cache(ttl_seconds: int = 60, dependencies: list = None):
     """Passthrough decorator - cache functionality not yet implemented."""
@@ -33,9 +33,7 @@ def _log_invocation(func: F) -> F:
     """Passthrough decorator - logs handled by audit.py."""
     return func
 
-# Shared configuration
-VENV_PYTHON = "/Users/vivariumenv1/Vivarium/.venv/bin/python"
-REPO_ROOT = Path("/Users/vivariumenv1/Vivarium")
+from scout.config.paths import REPO_ROOT, VENV_PYTHON
 
 
 def _run_command(
@@ -102,7 +100,7 @@ def scout_git_status(
     Returns:
         ToolOutput with tool_name="git_status", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.git", "status"]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "git", "status"]
 
     if full:
         cmd.append("--full")
@@ -159,7 +157,7 @@ def scout_git_diff(
     Returns:
         ToolOutput with tool_name="git_diff", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.git", "diff"]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "git", "diff"]
 
     if cached:
         cmd.append("--cached")
@@ -218,7 +216,7 @@ def scout_git_log(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.git",
+        "scout.cli.main",
         "log",
         f"--max-count={max_count}",
     ]
@@ -272,7 +270,7 @@ def scout_git_branch(
     Returns:
         ToolOutput with tool_name="git_branch", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.git", "branch"]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "branch"]
 
     if full:
         cmd.append("--full")
@@ -325,7 +323,7 @@ def scout_git_show(
     Returns:
         ToolOutput with tool_name="git_show", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.git", "show", ref]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "show", ref]
 
     if full:
         cmd.append("--full")
@@ -381,7 +379,7 @@ def scout_git_add(
     Returns:
         ToolOutput with tool_name="git_add", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.git", "add"]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "add"]
 
     if paths:
         cmd.extend(paths)
@@ -438,7 +436,7 @@ def scout_git_commit(
     Returns:
         ToolOutput with tool_name="git_commit", content=result_string, cost_usd=0.0
     """
-    cmd = [VENV_PYTHON, "-m", "vivarium.scout.cli.git", "commit", "-m", message]
+    cmd = [VENV_PYTHON, "-m", "scout.cli.main", "commit", "-m", message]
 
     if allow_empty:
         cmd.append("--allow-empty")

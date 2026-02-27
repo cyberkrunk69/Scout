@@ -191,7 +191,7 @@ class PlanStateManager:
         Uses atomic write: write to temp file, then rename.
         """
         # Import here to avoid circular imports
-        from vivarium.scout.cli.plan import PlanningContext
+        from scout.adaptive_engine.state import PlanningContext
         
         plan_id = generate_plan_id(context.request)
         context.plan_id = plan_id  # Store in context for reference
@@ -230,7 +230,7 @@ class PlanStateManager:
     
     async def load_plan_state(self, plan_id: str):
         """Load PlanningContext from disk."""
-        from vivarium.scout.cli.plan import PlanningContext
+        from scout.adaptive_engine.state import PlanningContext
         
         active_path = self.repo_root / ".scout" / "plans" / "active" / f"{plan_id}.json"
         if not active_path.exists():
