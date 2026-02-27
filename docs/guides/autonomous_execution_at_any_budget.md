@@ -1,6 +1,6 @@
 # Autonomous Execution at Any Budget: How Scout Actually Works
 
-Your tweet sparked some skepticism: *"Do the whole thing, make no mistakes. Add call-chain/index based SOT docs when ur done. Add any friction points or bugs found along the way to gh issues and you have a budget of $0.10. Go!"*
+Your tweet sparked some skepticism: *"Do the whole thing, make no mistakes. Add call-chain / index based SOT docs when ur done. Add any friction points or bugs found along the way to gh issues and you have a budget of $0.10. Go!"*
 
 This isn't marketing. This is the actual architecture.
 
@@ -43,28 +43,383 @@ Scout implements **two independent budget controls**:
 | `hourly_budget` | $1.00 | $10.00 | Router layer (`router.py`) |
 | `max_cost_per_event` | $0.05 | $0.50 | Per-operation layer (`app_config.py`) |
 
-The router enforces `hourly_budget` at the **request level** — if you've spent too much in the current hour, the entire request is rejected before any LLM call is made:
+---
+
+## Part 1: The Intent Router — Natural Language to Action
+
+The moment you type `scout "Do the whole thing..."`, your natural language hits the **Intent Classifier** first.
+
+### Pattern-Based Fast Routing
+
+From `scout/src/scout/llm/intent.py`:
 
 ```python
-# From router.py
-hourly_budget = min(
-    float(limits.get("hourly_budget", 1.0)),
-    HARD_MAX_HOURLY_BUDGET
-)
-if self.audit.hourly_spend() + estimated > hourly_budget:
-    self.audit.log("skip", reason="hourly_budget_exhausted")
-    return None
+QUICK_PATTERNS: dict[re.Pattern[str], IntentType] = {
+    re.compile(r"what (does|is|do) .* (do|mean|function|class)", re.I): IntentType.QUERY_CODE,
+    re.compile(r"fix .*(bug|error|issue|problem)", re.I): IntentType.FIX_BUG,
+    re.compile(r"add .*(feature|support|capability)", re.I): IntentType.IMPLEMENT_FEATURE,
+    re.compile(r"refactor|restructure|reorganize", re.I): IntentType.REFACTOR,
+    re.compile(r"optimize|perf|improve|speed", re.I): IntentType.OPTIMIZE,
+    re.compile(r"(write|add|create|generate) (tests?|docs?|documentation)", re.I): IntentType.DOCUMENT,
+    re.compile(r"(write|add|create) tests?", re.I): IntentType.TEST,
+    re.compile(r"deploy|release|push to (prod|production|staging)", re.I): IntentType.DEPLOY,
+}
+```
+
+**Cost: $0.00** — These regex patterns match instantly, no LLM call needed.
+
+> **We know.** These hardcoded regex patterns are a crime against software engineering. See [#3](https://github.com/cyberkrunk69/Scout/issues/3) — we're ripping them out tomorrow. It's worth paying the penny for intelligent intent classification.
+
+### LLM Fallback for Complex Intent
+
+When patterns don't match, Scout escalates to **Groq Llama 3.1 8B** for classification:
+
+```python
+async def classify(self, request: str) -> IntentResult:
+    request = request.strip()
+    if not request:
+        return IntentResult(intent_type=IntentType.UNKNOWN, confidence=0.0, ...)
+    
+    quick_result = self._try_quick_match(request)
+    if quick_result:
+        return quick_result
+    
+    return await self._classify_with_llm(request)
+```
+
+The classifier extracts:
+- **intent_type**: implement_feature, fix_bug, refactor, query_code, optimize, document, test, deploy
+- **target**: The file, module, or function being referenced
+- **confidence**: 0.0–1.0 with automatic clarifying questions if < 0.7
+- **metadata**: Additional context for routing
+
+---
+
+## Part 2: Big Brain — The Orchestration Layer
+
+Once intent is classified, the request hits **Big Brain** (`scout/src/scout/big_brain.py`).
+
+### Dual-Model Routing
+
+Scout uses **two models intelligently**:
+
+| Model | When Used | Cost |
+|-------|-----------|------|
+| **M2.1 (Flash)** | Confidence high, context compression passed | ~$0.001/1K tokens |
+| **M2.5 (Pro)** | Escalation needed, raw facts required | ~$0.015/1K tokens |
+
+```python
+# TICKET-19: Gate-approved briefs → M2.1 (cheap); escalate → M2.5 (expensive)
+MINIMAX_MODEL_FLASH = "MiniMax-M2.1-highspeed"
+MINIMAX_MODEL_PRO = "MiniMax-M2.5"
+```
+
+### Context Compression: The Middle Manager
+
+Before hitting the expensive models, your request goes through **MiddleManagerGate** (`scout/src/scout/middle_manager.py`) — a 3-tier freshness gate:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MIDDLE MANAGER GATE                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Tier 1: Deterministic Freshness                               │
+│  - Check deps_graph trust metadata                              │
+│  - If >50% symbols stale → immediate escalation (no API call) │
+├─────────────────────────────────────────────────────────────────┤
+│  Tier 2: 70B Compression (Groq Llama 3.3 70B)                  │
+│  - Extract structured output: confidence_score, [GAP] markers  │
+│  - Returns: confidence, gaps, suspicious flags                 │
+├─────────────────────────────────────────────────────────────────┤
+│  Tier 3: Confidence Threshold                                  │
+│  - Default: 0.75 threshold                                     │
+│  - Confidence ≥ threshold + no suspicious → PASS               │
+│  - Confidence < threshold → retry up to 3 times              │
+│  - Max retries → ESCALATE to raw facts                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+The **BriefParser** handles real-world 70B output quirks:
+- Multiple confidence formats (structured, natural language, decimal)
+- [GAP] markers for missing information
+- "None identified" verification declarations
+- Hallucination detection (confidence > 1.0 triggers rejection)
+
+### Autonomous Planning
+
+Big Brain takes your natural language and generates a **structured execution plan**:
+
+```json
+{
+  "plan": [
+    {
+      "command": "nav",
+      "args": {"task": "auth_handler"},
+      "depends_on": [],
+      "reasoning": "First, locate the authentication module"
+    },
+    {
+      "command": "query",
+      "args": {"scope": "auth.py", "include_deep": true},
+      "depends_on": [0],
+      "reasoning": "Then understand how auth flow works"
+    }
+  ],
+  "reasoning": "Explore auth before making changes"
+}
 ```
 
 ---
 
-## "Make No Mistakes": Quality Gates Architecture
+## Part 3: Bidirectional Planning Flow — Sub-Plans to Master Plan
 
-The phrase "make no mistakes" is handled by Scout's **Quality Gate system** — a multi-stage validation pipeline that runs after every executed step.
+Scout doesn't just generate one plan. It uses a **bidirectional flow** that breaks down complex requests into sub-plans, then synthesizes them back together.
+
+### Sub-Plan Generation
+
+From `scout/src/scout/cli/plan.py`:
+
+```python
+async def _synthesize_plans(
+    original_request: str,
+    sub_plans: list[dict],
+    ...
+) -> StructuredPlan:
+```
+
+For complex requests, Scout:
+1. **Decomposes** the request into parallel sub-plans
+2. **Executes** each sub-plan independently
+3. **Synthesizes** results into a master plan
+4. **Validates** consistency between sub-plans
+
+### Bidirectional Information Flow
+
+```
+                    ┌─────────────────┐
+                    │  Original       │
+                    │  Request        │
+                    └────────┬────────┘
+                             │
+                             ▼
+              ┌──────────────────────────────┐
+              │    SUB-PLAN GENERATION       │
+              │  (parallel decomposition)   │
+              └──────────────┬───────────────┘
+                             │
+        ┌────────────────────┼────────────────────┐
+        ▼                    ▼                    ▼
+   ┌─────────┐         ┌─────────┐         ┌─────────┐
+   │Sub-Plan │         │Sub-Plan │         │Sub-Plan │
+   │   1    │         │   2     │         │   N     │
+   └────┬────┘         └────┬────┘         └────┬────┘
+        │                   │                   │
+        ▼                   ▼                   ▼
+   ┌─────────────────────────────────────────────┐
+   │         SUB-PLAN EXECUTION                   │
+   │  (each runs with its own context)           │
+   └────────────────────┬────────────────────────┘
+                        │
+                        ▼
+              ┌────────────────────────┐
+              │  DISCOVERY EXTRACTION │
+              │  (friction points,    │
+              │   new requirements)   │
+              └───────────┬────────────┘
+                          │
+                          ▼
+              ┌────────────────────────┐
+              │   MASTER PLAN         │
+              │   SYNTHESIS           │
+              │   (merge + validate)  │
+              └───────────────────────┘
+```
+
+> **Note:** These flow diagrams are aspirational. The actual execution might do slightly different things in slightly different orders. But the general idea is right. I think. See disclaimer at the bottom.
+
+### Validation and Consistency
+
+The system validates that sub-plans don't conflict:
+
+```python
+def validate_replan_consistency(new_plan, context, sub_plans):
+    """Ensure sub-plan outcomes are compatible with master plan."""
+    # Check for dependency conflicts
+    # Verify scope hasn't changed unexpectedly
+    # Flag any contradictory outcomes
+```
+
+---
+
+## Part 4: Pivoting — Adaptive Re-Planning
+
+When execution reveals new information, Scout **pivots** — dynamically re-planning based on discoveries.
+
+### Trigger Registry
+
+From `scout/src/scout/adaptive_engine/triggers.py`:
+
+```python
+PIVOT_TRIGGERS: dict = {
+    # Priority 1: Critical (always trigger)
+    "security_finding": {"priority": 1, "weight": 10, "heuristic_kw": ["security", "vulnerability", "exploit"]},
+    "impossible_step": {"priority": 1, "weight": 10, "heuristic_kw": ["impossible", "cannot", "can't do"]},
+    
+    # Priority 2: High
+    "dependency_conflict": {"priority": 2, "weight": 7, "heuristic_kw": ["conflict", "contradict", "incompatible"]},
+    "new_critical_path": {"priority": 2, "weight": 7, "heuristic_kw": ["must have", "required", "essential"]},
+    
+    # Priority 3: Medium
+    "scope_change": {"priority": 3, "weight": 5, "heuristic_kw": ["also need", "additionally", "extended"]},
+    "performance_constraint": {"priority": 3, "weight": 5, "heuristic_kw": ["slow", "performance", "latency"]},
+    
+    # ... more triggers
+}
+```
+
+> **Another one we know about.** These hardcoded dictionaries are equally embarrassing. See [#4](https://github.com/cyberkrunk69/Scout/issues/4) — we're replacing this with proper LLM-driven pivot detection. The machine should decide when to pivot, not a lookup table.
+
+### Pivot Execution
+
+```python
+async def _synthesize_with_pivot(original_request, sub_plans, context, ...):
+    """Re-synthesize plans after pivot triggered."""
+    
+    pivot_info = f"""
+PIVOT TRIGGERED: {context.pivot_reason}
+FINDINGS: {context.discoveries}
+"""
+    
+    # 1. Remove obsolete sub-plans
+    # 2. Regenerate steps based on pivot context
+    # 3. Merge with surviving sub-plans
+    # 4. Validate consistency
+```
+
+The pivot loop runs up to **2 times** by default:
+
+```python
+max_replan_iterations = 2
+replan_count = 0
+
+while planning_context.replan_required and replan_count < max_replan_iterations:
+    replan_count += 1
+    progress.spin(f"Pivot triggered: {planning_context.pivot_reason}")
+    # Re-synthesize...
+```
+
+### Feedback Learning
+
+> **Honest admission:** "Does this work? — no idea.. sounds cool though. I'll have to check later, too busy rn" — Us, probably. See [#5](https://github.com/cyberkrunk69/Scout/issues/5)
+
+Scout logs pivot outcomes to `.scout/pivot_feedback.jsonl` and computes optimal thresholds:
+
+```python
+def compute_adaptive_threshold():
+    """Compute pivot threshold that maximizes precision using logged feedback."""
+    # Loads historical feedback
+    # Calculates optimal trigger threshold
+    # Adapts to user's confirmation/rejection patterns
+```
+---
+
+## Part 5: The Badass Batching System
+
+When plans need to execute multiple steps, the **Batch Pipeline** (`scout/src/scout/batch_pipeline.py`) takes over.
+
+### Features
+
+```python
+class PipelineExecutor:
+    """
+    Execute batch tasks with conditionals, variables, and early exit.
+    
+    Features:
+    - Sequential or parallel execution
+    - if/skip_if/stop_if conditionals
+    - store_as to save results to context
+    - ${var} variable interpolation
+    - Early exit on stop_if truthy
+    - Auto-JSON: Automatically inject --json flags for commands
+    """
+```
+
+### Conditionals
+
+```yaml
+tasks:
+  - command: git status
+    store_as: git_status
+  
+  - command: run tests
+    if: "${git_status.has_changes}"
+    skip_if: "${git_status.files_changed < 3}"
+  
+  - command: deploy
+    stop_if: "${tests.failed}"
+```
+
+### Circuit Breaker
+
+The batch system includes **self-healing** via circuit breaker:
+
+```python
+# Check circuit breaker before execution
+if self.circuit_breaker and not self.circuit_breaker.can_execute():
+    await self.reporter.emit(ProgressEvent(
+        task_id=f"task:{i}",
+        status=Status.CIRCUIT_OPEN,
+        message="Circuit breaker open - stopping execution"
+    ))
+    break
+```
+
+### Retry with Exponential Backoff
+
+```python
+class RetryConfig:
+    max_attempts: int = 3
+    base_delay: float = 1.0
+    exponential_base: float = 2.0
+    max_delay: float = 60.0
+```
+
+### Variable Interpolation
+
+```python
+evaluator = ExpressionEvaluator(context)
+
+# ${variable} syntax
+task["args"] = evaluator.interpolate_args(task["args"])
+
+# Supports:
+# - ${variable} - direct substitution
+# - ${variable.key} - nested access
+# - ${function(arg)} - function calls
+```
+
+### Auto-JSON Injection
+
+Commands that need structured output automatically get `--json` flags injected:
+
+```python
+COMMANDS_NEED_JSON = {
+    "git_status": "json",
+    "git_branch": "json",
+    "plan": "json_output",
+    "lint": "json_output",
+    "nav": "json_output",
+    "doc_sync": "json_output",
+    # ... more commands
+}
+```
+
+---
+
+## Part 6: Quality Gates — "Make No Mistakes"
+
+The phrase "make no mistakes" is handled by Scout's **Quality Gate system**.
 
 ### Gate Pipeline
-
-From `scout/src/scout/quality_gates/runtime.py`:
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -75,56 +430,48 @@ From `scout/src/scout/quality_gates/runtime.py`:
   validation        inference         resolution
 ```
 
-Each gate is independent and can be configured for **permissive**, **normal**, or **strict** enforcement:
+### Symbol Validation: Anti-Hallucination
 
-- **permissive**: Warn only, never block
-- **normal**: Block on critical errors, warn on warnings
-- **strict**: Block on any deviation from expected behavior
-
-### Symbol Validation: The Anti-Hallucination Layer
-
-Scout doesn't trust LLM output by default. The `SymbolValidationTool` (`scout/src/scout/tools/validation.py`) validates every suggested symbol against the **actual AST**:
+Scout validates every suggested symbol against actual AST:
 
 ```python
 async def validate_symbol(self, symbol: str, location: str) -> ValidationResult:
     """Validate that a symbol actually exists in the codebase."""
     # 1. Parse the target file into AST
     # 2. Walk the AST looking for the symbol
-    # 3. Verify the symbol has the expected type (function, class, etc.)
-    # 4. Return confidence score based on match quality
+    # 3. Verify the symbol has the expected type
+    # 4. Return confidence score
 ```
 
-This is why "make no mistakes" is achievable — Scout **detects** mistakes before they become problems.
+### Trust Levels
+
+- **permissive**: Warn only, never block
+- **normal**: Block on critical errors
+- **strict**: Block on any deviation
 
 ---
 
-## "Add Call-Chain / Index Based SOT Docs": The Doc Generation System
+## Part 7: Documentation Generation — Call-Chain / Index Based SOT
 
-"SOT" means **Source of Truth**. Scout generates two types of living documentation:
+Scout generates **Source of Truth** documentation automatically.
 
-### 1. TLDR Documents (`.tldr.md`)
+### TLDR Documents (`.tldr.md`)
 
-Quick summaries for each source file:
+Quick summaries:
 - Purpose statement
 - Key exports
 - Dependencies
 - Confidence scores
 
-### 2. Deep Documents (`.deep.md`)
+### Deep Documents (`.deep.md`)
 
-Comprehensive documentation including:
+Comprehensive docs:
 - Full call graphs (AST-derived)
 - Relationship maps
 - Impact analysis
 - Usage examples
 
-### The Index-Based Routing
-
-Scout uses **BM25F** (Full-Text Search with Field weighting) for documentation queries. This is the same algorithm used by Elasticsearch and Whoosh. It's:
-
-- **Free** (runs locally, no API calls)
-- **Fast** (sub-millisecond on typical codebases)
-- **Accurate** (understands code-specific tokenization)
+### BM25F Index Routing
 
 From `scout/src/scout/doc_sync/synthesizer.py`:
 
@@ -144,184 +491,154 @@ class BM25FDocumentSync:
         )
 ```
 
-When you request "call-chain docs", Scout:
-1. Builds an AST of your codebase
-2. Extracts all function/method calls
-3. Resolves dependencies
-4. Generates a directed graph
-5. Renders as Markdown with Mermaid diagrams
+This is:
+- **Free** (local, no API calls)
+- **Fast** (sub-millisecond)
+- **Accurate** (code-specific tokenization)
 
 ---
 
-## "Add Friction Points to GitHub Issues": The Discovery & Audit System
+## Part 8: GitHub Issue Automation — "Add Friction Points to GH Issues"
 
-When Scout encounters problems, it doesn't just fail silently — it **discovers** them and reports them in structured ways.
+When Scout finds problems, it **creates issues automatically**.
 
 ### Discovery Types
-
-From the execution engine (`executor.py`):
 
 ```python
 discoveries.append({
     "step_id": step.step_id,
-    "type": result.output.get("discovery_type"),
+    "type": result.output.get("discovery_type"),  # friction_point, stale_dependency, etc.
     "detail": result.output.get("discovery_detail"),
     "requires_replan": result.output.get("requires_replan", False)
 })
 ```
 
-**Discovery types include:**
-- `friction_point`: Something is harder than expected
-- `stale_dependency`: A dependency has changed
-- `hallucinated_path`: LLM suggested a non-existent file
-- `cost_anomaly`: Operation cost exceeded estimates
-- `quality_gate_failure`: Validation didn't pass
-
-### GitHub Issue Creation
-
-Scout can automatically create GitHub issues from discoveries via the `GitHubTool` (`scout/src/scout/tools/github.py`):
+### GitHub Integration
 
 ```python
-async def create_issue(
-    self, 
-    title: str, 
-    body: str, 
-    labels: List[str] = None
-) -> Dict[str, Any]:
+async def create_issue(self, title: str, body: str, labels: List[str] = None):
     """Create a GitHub issue with auto-categorized labels."""
     # Auto-labels based on discovery type
     # Includes reproduction steps
     # Links to audit logs
 ```
 
-This closes the loop on your request: *"find bugs → create issues"* — fully automated.
-
 ---
 
-## The Complete Flow: $0.10 Autonomy
+## Complete Execution Flow
 
-Here's what happens when you run:
-
-```bash
-scout "Do the whole thing, make no mistakes. Add call-chain / index based SOT docs when ur done. Add any friction points or bugs found along the way to gh issues" --budget 0.10
-```
-
-### Execution Timeline
+> **Disclaimer:** These diagrams could be complete bullshit, but they look cool, right? Someone smarter than me should verify these are accurate. I'll get to it next weekish. Maybe.
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│ 1. INTENT PARSING (Big Brain)                                          │
-│    - Classify request as autonomous execution                          │
-│    - Identify subtasks: execution + docs + issue creation              │
-│    - Estimated cost: $0.001                                            │
-└──────────────────────────────────┬─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. INTENT PARSING                                                           │
+│    ┌────────────────────┐    ┌────────────────────┐                        │
+│    │ Quick Patterns     │───►│ Groq 8B Classifier │                        │
+│    │ ($0.00, instant)   │    │ ($0.0001)          │                        │
+│    └────────────────────┘    └────────────────────┘                        │
+│    → IntentType, target, confidence                                         │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
                                    ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ 2. BUDGET CHECK (Router + BudgetGuard)                                 │
-│    - $0.10 budget confirmed                                            │
-│    - Set max_cost_per_event = $0.02 (20% reserve)                     │
-│    - hourly_budget check passed                                       │
-└──────────────────────────────────┬─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2. BIG BRAIN ORCHESTRATION                                                  │
+│    ┌────────────────────┐    ┌────────────────────┐                        │
+│    │ Middle Manager    │───►│ Dual-Model Router  │                        │
+│    │ (context compress)│    │ (Flash vs Pro)    │                        │
+│    └────────────────────┘    └────────────────────┘                        │
+│    → Structured Plan with dependencies                                      │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
                                    ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ 3. PLAN GENERATION (Middle Manager)                                    │
-│    - Break into steps with dependencies                                │
-│    - Each step has estimated cost                                     │
-│    - BudgetGuard will gate each step                                  │
-└──────────────────────────────────┬─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3. BIDIRECTIONAL PLANNING                                                   │
+│    ┌────────────────────┐    ┌────────────────────┐                        │
+│    │ Sub-Plan Parallel │◄───►│ Master Synthesis  │                        │
+│    │ Decomposition     │    │ + Validation      │                        │
+│    └────────────────────┘    └────────────────────┘                        │
+│    → Validated execution plan                                               │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
                                    ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ 4. EXECUTION LOOP                                                       │
-│    ┌─────────────────────┐    ┌─────────────────────┐                  │
-│    │ Step N              │    │ BudgetGuard        │                  │
-│    │ - Execute tool      │◄──►│ - Check $0.10 limit │                  │
-│    │ - Quality gates     │    │ - Block if exceeded│                  │
-│    │ - Symbol validation │    │                    │                  │
-│    └──────────┬──────────┘    └─────────────────────┘                  │
-│               ▼                                                         │
-│    ┌─────────────────────┐    ┌─────────────────────┐                  │
-│    │ Discovery?         │───►│ Create GitHub Issue │                  │
-│    │ - Log to audit     │    │ (if enabled)        │                  │
-│    └─────────────────────┘    └─────────────────────┘                  │
-└──────────────────────────────────┬─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4. EXECUTION LOOP (with pivoting)                                          │
+│    ┌────────────────────┐    ┌────────────────────┐                        │
+│    │ BudgetGuard       │───►│ Quality Gates     │                        │
+│    │ ($0.10 hard limit)│    │ (AST validation)  │                        │
+│    └────────────────────┘    └────────────────────┘                        │
+│               │                         │                                  │
+│               ▼                         ▼                                  │
+│    ┌────────────────────┐    ┌────────────────────┐                        │
+│    │ Circuit Breaker   │    │ Pivot Detection   │                        │
+│    │ (failure隔离)     │    │ (re-plan if needed)                      │
+│    └────────────────────┘    └────────────────────┘                        │
+│                                                                           │
+│    [Loop: execute → validate → discover → pivot?]                         │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
                                    ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ 5. DOC GENERATION (Post-Execution)                                      │
-│    - AST analysis for call chains                                      │
-│    - BM25 index for SOT docs                                           │
-│    - Generate .tldr.md + .deep.md                                      │
-└──────────────────────────────────┬─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5. DOC GENERATION                                                           │
+│    ┌────────────────────┐    ┌────────────────────┐                        │
+│    │ AST Call Graphs  │───►│ BM25F Index        │                        │
+│    │ (.deep.md)       │    │ (.tldr.md)        │                        │
+│    └────────────────────┘    └────────────────────┘                        │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
                                    ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ 6. FINAL REPORT                                                        │
-│    - Steps completed vs failed                                         │
-│    - Total cost (should be < $0.10)                                   │
-│    - Discoveries made                                                  │
-│    - Docs generated                                                    │
-└──────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 6. ISSUE CREATION                                                           │
+│    ┌────────────────────┐    ┌────────────────────┐                        │
+│    │ Discovery → Issue │    │ Audit Logs        │                        │
+│    │ (auto-categorized)│    │ (full trace)     │                        │
+│    └────────────────────┘    └────────────────────┘                        │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Why $0.10 Is Actually Reasonable
 
-Here's the math:
-
 | Operation | Cost |
 |-----------|------|
 | Intent classification (regex) | $0.00 |
+| Intent classification (LLM) | ~$0.0001 |
 | BM25F search (local) | $0.00 |
 | Symbol validation (AST) | $0.00 |
 | Brief compression (Groq 70B) | ~$0.001/1K tokens |
 | Full execution (M2.1 Flash) | ~$0.001/1K tokens |
 | Documentation (M2.1 Flash) | ~$0.002/1K tokens |
 
-For a typical small-to-medium task:
+For a typical task:
 - 5 execution steps × $0.005 = $0.025
 - 2 doc generation runs × $0.01 = $0.02
 - Context compression × $0.01 = $0.01
 
 **Total: ~$0.055** — well under $0.10
 
-The system is **designed** to be cheap by default. LLM calls are the expensive part, and Scout minimizes them through:
-1. **Index-first routing** — try BM25 before LLM
-2. **Small models for easy tasks** — M2.1 Flash for simple ops
-3. **Context compression** — Groq 70B compresses before expensive models
-4. **Pre-execution budget gates** — fail fast, don't waste money
-
 ---
 
-## Friction Points Found During Development
+## Known Friction Points
 
-No system is perfect. Here are known friction points:
-
-### 1. Lock Contention in Plan State
-- **Issue**: Concurrent executions can race on lock files
-- **Mitigation**: Atomic mkdir with O_EXCL flag
-- **Status**: Minor — rare in single-user scenarios
-
-### 2. BM25 Index Staleness
-- **Issue**: Index can drift from source after edits
-- **Mitigation**: Freshness metadata, auto-rebuild triggers
-- **Status**: Documented, handled
-
-### 3. Quality Gate False Positives
-- **Issue**: Strict mode can reject valid code
-- **Mitigation**: Configurable trust levels
-- **Status**: User-adjustable
-
-### 4. Model Routing Failures
-- **Issue**: Primary provider down = blocked
-- **Mitigation**: Multi-provider fallback (Anthropic → Groq → Google → MiniMax)
-- **Status**: Resilient
+| Issue | Status | Mitigation |
+|-------|--------|-------------|
+| Lock contention in plan state | Minor | Atomic mkdir with O_EXCL |
+| BM25 index staleness | Handled | Freshness metadata, auto-rebuild |
+| Quality gate false positives | User-configurable | Trust levels (permissive/normal/strict) |
+| Provider fallback | Resilient | Multi-provider (Anthropic → Groq → Google → MiniMax) |
 
 ---
 
 ## Conclusion
 
-The tweet isn't hyperbole. It's a specification.
+Your tweet wasn't hyperbola. It was a specification.
 
 Scout's architecture was built specifically to enable:
+- **Intent understanding** (pattern + LLM classification)
+- **Intelligent orchestration** (Big Brain + Middle Manager)
+- **Bidirectional planning** (sub-plans → synthesis → validation)
+- **Adaptive pivoting** (trigger registry + re-planning)
+- **Badass batching** (circuit breaker + retry + conditionals)
 - **Bounded execution** (BudgetGuard, hourly limits)
 - **Mistake prevention** (Quality gates, symbol validation)
 - **Automatic documentation** (AST analysis, BM25 indexing)
@@ -329,14 +646,13 @@ Scout's architecture was built specifically to enable:
 
 All of this runs locally, costs pennies, and is backed by 727 tests.
 
-Try it:
-
-```bash
-scout "Add user auth" --budget 0.10
-```
-
-We'd love your feedback. File issues at [github.com/cyberkrunk69/Scout](https://github.com/cyberkrunk69/Scout).
+**One natural language input → shipped software.**
 
 ---
 
-*This document was generated by Scout's documentation system. Confidence: 0.95*
+*This document was generated by MiniMax M2.5 in Cursor, not via the Scout doc system. (Known quantity — just wanted to get this out in the world and then polish and eat our own dog food.)*
+
+---
+
+> **Final disclaimer:** The system might actually do some things different than what's written (I didn't hand code any of this so fuck if I know..). But the general idea is correct, and mostly not vapor ware..Thanks for reading!
+
