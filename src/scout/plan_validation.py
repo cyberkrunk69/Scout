@@ -215,7 +215,7 @@ async def llm_check_goal_alignment(new_plan: str, context) -> dict:
     - SCOUT_PLAN_LLM_VALIDATION (default: true)
     - SCOUT_PLAN_VALIDATION_SAMPLE_RATE (default: 1.0)
     """
-    from vivarium.scout.llm.minimax import call_minimax_async
+    from scout.llm.minimax import call_minimax_async
     
     # Configurable: allow disabling entirely
     if not LLM_GOAL_ALIGNMENT_ENABLED:

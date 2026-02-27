@@ -203,7 +203,7 @@ class PlanStorageManager:
 
     def get(self, plan_id: str) -> Optional[dict]:
         """Get and decompress a plan."""
-        from vivarium.scout.plan_io import read_plan
+        from scout.plan_io import read_plan
 
         plan = read_plan(plan_id)
         if plan:

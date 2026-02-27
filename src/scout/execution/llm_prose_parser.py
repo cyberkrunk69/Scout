@@ -474,7 +474,7 @@ class LlmProseParser:
 
 # Import from doc_generation if available, otherwise define locally
 try:
-    from vivarium.scout.doc_generation import BudgetExceededError
+    from scout.doc_generation import BudgetExceededError
 except ImportError:
 
     class BudgetExceededError(RuntimeError):

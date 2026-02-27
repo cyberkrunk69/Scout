@@ -6,7 +6,7 @@ Provides intelligent summarization of large outputs, with support for:
 - LLM-based summarization (future extension via MiniMax)
 
 Usage:
-    from vivarium.scout.utils.summarize import summarize
+    from scout.utils.summarize import summarize
 
     # Simple truncation (default)
     summary = summarize(large_text, max_length=500)
@@ -574,7 +574,7 @@ async def _call_llm_summarize_git(text: str, model: str = "MiniMax-M2") -> tuple
         model: Model to use (default: MiniMax-M2)
     """
     try:
-        from vivarium.scout.llm.minimax import call_minimax_async
+        from scout.llm.minimax import call_minimax_async
     except ImportError:
         return "", False
 

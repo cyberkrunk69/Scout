@@ -278,7 +278,7 @@ async def scout_pr(
     if not body:
         git_context = _gather_pr_context_deep(base_branch)
 
-        from vivarium.scout.llm.minimax import call_minimax_async_detailed
+        from scout.llm.minimax import call_minimax_async_detailed
 
         body_prompt = f"""Generate a PR description for:
 

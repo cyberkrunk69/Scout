@@ -2,7 +2,9 @@
 
 [![License](https://img.shields.io/pypi/l/scout-core.svg)](https://github.com/cyberkrunk69/Scout/blob/main/LICENSE)
 
-**Status:** Pre-release (alpha). Not yet published to PyPI. Requires Python 3.10+.
+**Status:** Pre-release (alpha). Not yet published to PyPI. Requires Python 3.10+. **727 tests passing**.
+
+**Test Status:** ✅ 727 tests passing (pytest)
 
 Scout is an AI-centric development intelligence layer that generates **Subtext** — versioned, living documentation that travels with your code. It provides intelligent routing, execution engine, self-improvement, and observability for AI-assisted development.
 
