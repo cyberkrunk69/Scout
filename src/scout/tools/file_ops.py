@@ -61,7 +61,7 @@ def scout_read_file(
     - Returns file content directly
     - No LLM call - deterministic output
 
-    Example: `scout_read_file(file_path="vivarium/scout/cli/plan.py")`
+    Example: `scout_read_file(file_path="scout/cli/main.py")`
 
     Returns:
         ToolOutput with tool_name="read_file", content=file_content_or_error, cost_usd=0.0
@@ -69,7 +69,7 @@ def scout_read_file(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.scout",
+        "scout.cli.main",
         "read-file",
         "--file-path",
         file_path,
@@ -123,7 +123,7 @@ async def scout_write_with_review(
     - Sends diff to MiniMax for senior engineer review
     - Only writes if approved
 
-    Example: `scout_write_with_review(file_path="vivarium/scout/new_tool.py", content="# New file...")`
+    Example: `scout_write_with_review(file_path="scout/cli/main.py", content="# New file...")`
 
     Returns:
         ToolOutput with tool_name="write_with_review", content=result, cost_usd=0.0
@@ -131,7 +131,7 @@ async def scout_write_with_review(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.scout",
+        "scout.cli.main",
         "write-with-review",
         "--content",
         content,
@@ -208,7 +208,7 @@ async def scout_delete_with_review(
     - Sends deletion request to MiniMax for approval
     - Only deletes if approved
 
-    Example: `scout_delete_with_review(file_path="vivarium/scout/old_tool.py", reason="Obsolete utility")`
+    Example: `scout_delete_with_review(file_path="scout/tools/old_tool.py", reason="Obsolete utility")`
 
     Returns:
         ToolOutput with tool_name="delete_with_review", content=result, cost_usd=0.0
@@ -216,7 +216,7 @@ async def scout_delete_with_review(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.scout",
+        "scout.cli.main",
         "delete-with-review",
         "--file-path",
         file_path,

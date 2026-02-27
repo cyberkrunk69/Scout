@@ -268,7 +268,7 @@ def _route_query_by_patterns(natural_language: str) -> dict[str, Any] | None:
                 return {
                     "tool": "nav",
                     "task": task.strip(),
-                    "scope": "vivarium/scout",
+                    "scope": ".",
                     "include_deep": False,
                     "copy_to_clipboard": True,
                 }
@@ -286,7 +286,7 @@ def _route_query_by_patterns(natural_language: str) -> dict[str, Any] | None:
         if re.search(pat, text, re.I):
             return {
                 "tool": "query",
-                "scope": "vivarium/scout",
+                "scope": ".",
                 "include_deep": True,
                 "copy_to_clipboard": True,
             }
@@ -306,14 +306,14 @@ Docs/explanations ("explain X", "tell me about X") → tool="query".
 Respond with ONLY valid JSON, no markdown or explanation:
 {{
   "tool": "nav" or "query",
-  "scope": "vivarium/scout",
+  "scope": ".",
   "include_deep": true,
   "copy_to_clipboard": true,
   "task": "extracted symbol or topic (required when tool is nav)"
 }}
 
 - tool: "nav" for symbol lookups, "query" for docs
-- scope: package path (e.g. vivarium/scout)
+- scope: package path (e.g. scout)
 - include_deep: tldr vs deep (query only)
 - copy_to_clipboard: copy results
 - task: for nav, symbol to find (e.g. "TriggerRouter")"""
@@ -461,7 +461,7 @@ def _truncate_string_to_tokens(text: str, max_tokens: int) -> str:
 
 async def chat_turn_async(
     messages: list[dict[str, str]],
-    cwd_scope: str = "vivarium",
+    cwd_scope: str = ".",
     repo_state: dict[str, Any] | None = None,
     caveman: bool = False,
     progress_cb: Optional[Callable[[str], None]] = None,
@@ -758,7 +758,7 @@ Or {{"message": "..."}} for greetings only."""
 
 async def interpret_command_async(
     natural_language: str,
-    cwd_scope: str = "vivarium",
+    cwd_scope: str = ".",
 ) -> dict[str, Any]:
     """
     Interpret natural language into a scout tool call.

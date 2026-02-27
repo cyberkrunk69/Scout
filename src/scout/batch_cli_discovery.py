@@ -20,26 +20,27 @@ DISCOVERABLE_COMMANDS = [
 ]
 
 # Map CLI module names to command names
+# Updated from scout.cli.* to scout.cli.* for standalone operation
 CLI_MODULE_MAP = {
-    "lint": "vivarium.scout.cli.lint",
-    "audit": "vivarium.scout.cli.audit",
-    "run": "vivarium.scout.cli.run",
-    "nav": "vivarium.scout.cli.nav",
-    "roast": "vivarium.scout.cli.roast",
-    "query": "vivarium.scout.cli.query",
-    "validate": "vivarium.scout.cli.validate",
-    "index": "vivarium.scout.cli.index",
-    "doc_sync": "vivarium.scout.cli.doc_sync",
-    "env": "vivarium.scout.cli.env",
-    "git_status": "vivarium.scout.cli.git",
-    "git_branch": "vivarium.scout.cli.git",
-    "git_diff": "vivarium.scout.cli.git",
-    "git_log": "vivarium.scout.cli.git",
-    "git_show": "vivarium.scout.cli.git",
-    "brief": "vivarium.scout.cli.brief",
-    "ci_guard": "vivarium.scout.cli.ci_guard",
-    "status": "vivarium.scout.cli.status",
-    "plan": "vivarium.scout.cli.plan",
+    "lint": "scout.cli.main",
+    "audit": "scout.cli.main",
+    "run": "scout.cli.main",
+    "nav": "scout.cli.main",
+    "roast": "scout.cli.main",
+    "query": "scout.cli.main",
+    "validate": "scout.cli.main",
+    "index": "scout.cli.main",
+    "doc_sync": "scout.cli.main",
+    "env": "scout.cli.main",
+    "git_status": "scout.cli.main",
+    "git_branch": "scout.cli.main",
+    "git_diff": "scout.cli.main",
+    "git_log": "scout.cli.main",
+    "git_show": "scout.cli.main",
+    "brief": "scout.cli.main",
+    "ci_guard": "scout.cli.main",
+    "status": "scout.cli.main",
+    "plan": "scout.cli.main",
 }
 
 
@@ -57,8 +58,8 @@ async def discover_cli_interface(command: str, venv_python: str) -> dict:
     if command in _CLI_CACHE:
         return _CLI_CACHE[command]
     
-    # Determine the CLI module
-    module = CLI_MODULE_MAP.get(command, f"vivarium.scout.cli.{command}")
+    # Determine the CLI module - default to scout.cli.main for standalone
+    module = CLI_MODULE_MAP.get(command, f"scout.cli.main")
     
     # Run --help
     try:

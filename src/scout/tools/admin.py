@@ -306,7 +306,7 @@ async def scout_grep(
     - Respects off-limits files
     - Logs all searches to audit
 
-    Example: `scout_grep(pattern="def.*test", path="vivarium/scout", glob="*.py")`
+    Example: `scout_grep(pattern="def.*test", path="scout", glob="*.py")`
 
     Returns:
         ToolOutput with tool_name="grep", content=grep_output, cost_usd=0.0

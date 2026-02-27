@@ -64,4 +64,6 @@ def apply_compat_shield(directory: str, dry_run: bool = False):
 
 
 if __name__ == "__main__":
-    apply_compat_shield("vivarium/scout")
+    import sys
+    scope = sys.argv[1] if len(sys.argv) > 1 else "."
+    apply_compat_shield(scope)

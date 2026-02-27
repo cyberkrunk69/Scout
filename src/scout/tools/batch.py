@@ -70,7 +70,7 @@ async def scout_batch(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.pipeline",
+        "scout.cli.main",
         "--tasks",
         tasks_json,
     ]
@@ -152,7 +152,7 @@ async def scout_run(
     cmd = [
         VENV_PYTHON,
         "-m",
-        "vivarium.scout.cli.run",
+        "scout.cli.main",
         "--module",
         module,
     ]

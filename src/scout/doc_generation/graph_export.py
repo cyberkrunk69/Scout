@@ -143,7 +143,8 @@ def export_knowledge_graph(
     """
     target_path = Path(target_path).resolve()
     if output_path is None:
-        output_path = target_path / "vivarium.kg.json"
+        # Default to knowledge graph file in target directory
+        output_path = target_path / "knowledge_graph.json"
     output_path = Path(output_path).resolve()
 
     nodes: List[Dict[str, Any]] = []

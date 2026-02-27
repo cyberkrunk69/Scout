@@ -1,10 +1,10 @@
 """
 Blind Voting Engine for Browser Element Selection.
 
-Extends BallotGate pattern from vivarium/scout/adaptive_engine/gates.py.
+Extends BallotGate pattern from scout/adaptive_engine/gates.py.
 Uses parallel 8B LLM calls for element disambiguation.
 
-Cost Analysis (per vivarium philosophy - cost is feature):
+Cost Analysis (per Scout philosophy - cost is feature):
 - 3 voters × 1000 input tokens × $0.00005 = $0.00015
 - 3 voters × 200 output tokens × $0.00008 = $0.000048
 - Total per iteration: ~$0.00020

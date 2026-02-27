@@ -111,7 +111,7 @@ def _module_to_file_path(repo_root: Path, qual: str) -> Optional[Tuple[str, str]
     if len(parts) < 2:
         return None
     symbol = parts[-1]
-    # Try progressively shorter module paths: scout.llm -> scout -> vivarium
+    # Try progressively shorter module paths: scout.llm -> scout
     for i in range(len(parts) - 1, 0, -1):
         mod = ".".join(parts[:i])
         path_str = mod.replace(".", "/")

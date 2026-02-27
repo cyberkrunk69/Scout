@@ -5,7 +5,7 @@ from __future__ import annotations
 """Pipeline executor for stateful batch operations.
 
 Self-Healing Features:
-- Progress reporting with whimsy (following vivarium/scout/ui/whimsy.py patterns)
+- Progress reporting with whimsy (following scout/ui/whimsy.py patterns)
 - Circuit breaker pattern for failure detection
 - Retry with exponential backoff
 - Dependency-aware parallel execution

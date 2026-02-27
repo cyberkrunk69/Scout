@@ -23,7 +23,7 @@ class SymbolTree:
         type: One of "function", "class", "module", "method", "constant", etc.
         children: Nested symbols (e.g., methods inside a class).
         dependencies: List of dependency names/paths (imports, requires).
-        calls: Qualified names of functions/callables invoked (e.g. vivarium.scout.audit.log).
+        calls: Qualified names of functions/callables invoked (e.g. scout.audit.log).
         uses_types: Types from annotations or assignments (e.g. CostTracker, SymbolTree).
         exports: What this symbol exposes (for modules: __all__ or top-level defs).
         lineno: Starting line number (1-indexed).

@@ -60,20 +60,20 @@ def _get_apply_instructions(recommendation) -> dict:
     """Generate instructions for applying the approved change."""
     instructions = {
         "update_prompt": {
-            "file": "vivarium/scout/cli/plan.py",
+            "file": "scout/cli/plan.py",
             "target": "system_prompt around line 2094",
             "action": "Add JSON schema example to prompt",
             "backup": "Create backup before editing",
             "test": "Run scout_plan with sample input to verify"
         },
         "add_validator": {
-            "file": "vivarium/scout/tools/__init__.py",
+            "file": "scout/tools/__init__.py",
             "target": "TOOL_METADATA",
             "action": "Add validator to tool's validator list",
             "test": "Run validation pipeline on tool output"
         },
         "adjust_metadata": {
-            "file": "vivarium/scout/tools/__init__.py",
+            "file": "scout/tools/__init__.py",
             "target": "TOOL_METADATA",
             "action": "Adjust cost_tier or timeout_seconds",
             "test": "Run tool and verify behavior"

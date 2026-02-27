@@ -1,4 +1,4 @@
-"""Stub module for query_for_nav - ported from vivarium."""
+"""Stub module for query_for_nav - ported from scout."""
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +11,6 @@ def query_for_nav(
 ) -> list[dict[str, Any]]:
     """Stub implementation - returns empty results.
     
-    Original from vivarium.scout.cli.index.query_for_nav
+    Original from scout.cli.index.query_for_nav
     """
     return []

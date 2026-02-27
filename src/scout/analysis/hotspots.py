@@ -159,7 +159,7 @@ def _extract_module_from_event(event: dict[str, Any]) -> Optional[str]:
                 # Try to extract relative path by removing common prefixes
                 parts = py_path.split("/")
                 for i, part in enumerate(parts):
-                    if part == "vivarium" or part == "src" or part == "lib":
+                    if part == "src" or part == "lib":
                         return "/".join(parts[i:])
             return py_path
 

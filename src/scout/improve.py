@@ -234,7 +234,7 @@ async def _analyze_single_hotspot(
 
     # Use scout_roast for analysis
     try:
-        cmd = [sys.executable, "-m", "vivarium.scout.cli.roast", str(full_path)]
+        cmd = [sys.executable, "-m", "scout.cli.main", "roast", str(full_path)]
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             cwd=str(repo_root),
@@ -432,7 +432,7 @@ Generate a prioritized list of improvements with specific fixes."""
         cmd = [
             sys.executable,
             "-m",
-            "vivarium.scout.cli.plan",
+            "scout.cli.main",
             "--goal",
             prompt,
             "--target",

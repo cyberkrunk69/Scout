@@ -807,7 +807,7 @@ def _load_living_docs(file_paths: list[str], repo_root: Path) -> str:
         if not fp:
             continue
         # Convert to living doc path:
-        # vivarium/scout/foo.py -> docs/livingDoc/vivarium/scout/foo.py.deep.md
+        # scout/foo.py -> docs/livingDoc/scout/foo.py.deep.md
         doc_path = repo_root / "docs" / "livingDoc" / f"{fp}.deep.md"
         if doc_path.exists():
             content = doc_path.read_text(encoding="utf-8", errors="replace")
@@ -838,9 +838,10 @@ def _load_source_code(
 
         # Try original path
         if not full_path.exists():
-            # Try without vivarium/ prefix
-            if fp.startswith("vivarium/"):
-                alt_fp = fp.replace("vivarium/", "")
+            # Try without scope/ prefix (e.g., scout/)
+            if "/" in fp:
+                parts = fp.split("/", 1)
+                alt_fp = parts[1]  # Remove first part of path
                 full_path = repo_root / alt_fp
 
         if full_path.exists() and full_path.is_file():
@@ -868,7 +869,7 @@ def _verify_plan_files(plan_text: str, repo_root: Path) -> list[dict]:
     results = []
 
     # Extract file paths mentioned in the plan
-    # Match patterns like "scout_mcp_server.py", "vivarium/scout/foo.py"
+    # Match patterns like "scout_mcp_server.py", "scout/foo.py"
     file_patterns = re.findall(r"[\w/]+\.py", plan_text)
 
     # Deduplicate
@@ -879,11 +880,10 @@ def _verify_plan_files(plan_text: str, repo_root: Path) -> list[dict]:
     for fp in files[:10]:  # Limit to 10 verifications
         result = {"file": fp, "exists": False, "suggestion": None}
 
-        # Try various paths
+        # Try various paths (original, and with common scope prefixes)
         possible_paths = [
             repo_root / fp,
-            repo_root / "vivarium" / fp,
-            repo_root / fp.replace("vivarium/", ""),
+            repo_root / "scout" / fp,
         ]
 
         for pp in possible_paths:
@@ -1601,7 +1601,7 @@ async def _improve_plan(
 identify what specific context would help improve this plan.
 
 Respond with a JSON array of file paths or module names you need to understand better.
-Example: ["scout_mcp_server.py", "vivarium/scout/router.py"]"""
+Example: ["scout_mcp_server.py", "scout/router.py"]"""
 
     user_prompt = f"""For this plan about: {request}
 
@@ -1669,7 +1669,10 @@ Provide improved plan. Make sure to address all the quality issues."""
 
 def _load_cli_context(repo_root: Path) -> str:
     """Load Scout CLI tools context."""
-    cli_dir = repo_root / "vivarium" / "scout" / "cli"
+    # Look for CLI directory - try scout/cli first, then src/scout/cli
+    cli_dir = repo_root / "scout" / "cli"
+    if not cli_dir.exists():
+        cli_dir = repo_root / "src" / "scout" / "cli"
     if not cli_dir.exists():
         return ""
 
@@ -1708,7 +1711,7 @@ async def _smart_gather_context(
         "\n"
         "Respond with a JSON array of file paths. "
         "Be specific - include exact file paths.\n"
-        'Example: ["scout_mcp_server.py", "vivarium/scout/router.py"]'
+        'Example: ["scout_mcp_server.py", "scout/router.py"]'
     )
 
     user_prompt = (

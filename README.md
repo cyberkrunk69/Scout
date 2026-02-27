@@ -72,6 +72,8 @@ scout graph callers validate_symbol
 | **RollbackManager** | Automatic rollback on failure |
 | **Parallel Execution** | Run independent tasks concurrently |
 
+> **Deep Dive:** See [Plan & Execution Deep Dive](docs/guides/plan_execution_deep_dive.md) for the full architectural breakdown — gate system, circuit breakers, quality gates, and more.
+
 ### Self-Improvement
 
 | Feature | Description |
@@ -362,6 +364,7 @@ MIT License
 | `CONFIGURATION.md` | Config schema reference |
 | `docs/adr/*.md` | Architecture Decision Records |
 | `docs/guides/*.md` | Usage guides |
+| `docs/guides/plan_execution_deep_dive.md` | **Full Plan & Execution system architecture** — gate system, circuit breakers, quality gates, safety, state management |
 
 ---
 

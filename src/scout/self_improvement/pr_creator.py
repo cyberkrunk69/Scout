@@ -137,10 +137,20 @@ def create_tool_stub(tool_name: str, dry_run: bool = False) -> tuple[bool, str, 
     Returns:
         Tuple of (success, error_message, list_of_created_files)
     """
-    tools_dir = REPO_ROOT / "vivarium" / "scout" / "tools"
-
-    if not tools_dir.exists():
-        return False, f"Tools directory not found: {tools_dir}", []
+    # Look for tools directory - try multiple locations
+    possible_dirs = [
+        REPO_ROOT / "scout" / "tools",
+        REPO_ROOT / "src" / "scout" / "tools",
+        REPO_ROOT / "tools",
+    ]
+    tools_dir = None
+    for d in possible_dirs:
+        if d.exists():
+            tools_dir = d
+            break
+    
+    if tools_dir is None:
+        return False, f"Tools directory not found in: {possible_dirs}", []
 
     tool_path = tools_dir / f"{tool_name}.py"
 
