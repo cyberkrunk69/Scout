@@ -1,10 +1,8 @@
 # Scout Core — AI-Centric Development Intelligence
 
-[![PyPI Version](https://img.shields.io/pypi/v/scout-core.svg)](https://pypi.org/project/scout-core/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/scout-core.svg)](https://pypi.org/project/scout-core/)
 [![License](https://img.shields.io/pypi/l/scout-core.svg)](https://github.com/cyberkrunk69/Scout/blob/main/LICENSE)
 
-**Status:** Pre-release (alpha). Core modules are stable; browser support and CLI are still under development.
+**Status:** Pre-release (alpha). Not yet published to PyPI. Requires Python 3.10+.
 
 Scout is an AI-centric development intelligence layer that generates **Subtext** — versioned, living documentation that travels with your code. It provides intelligent routing, execution engine, self-improvement, and observability for AI-assisted development.
 
@@ -34,9 +32,7 @@ Subtext is plain Markdown and JSON, versioned in Git. No proprietary databases. 
 ## Quick Start
 
 ```bash
-# Installation
-pip install scout-core
-# or from source:
+# From source (requires Python 3.10+)
 git clone https://github.com/cyberkrunk69/Scout.git
 cd Scout
 pip install -e .

@@ -4,7 +4,9 @@
 
 ## TL;DR
 
-This PR ports ~36,000 lines of code from Vivarium into a standalone Scout package. It adds: adaptive engine, self-improvement system, terminal UI (Whimsy), 20+ CLI commands, 12+ tool modules, batch pipeline, quality gates, and comprehensive documentation. Scout is now installable via `pip install scout-core`.
+This PR ports ~36,000 lines of code from Vivarium into a standalone Scout package. It adds: adaptive engine, self-improvement system, terminal UI (Whimsy), 20+ CLI commands, 12+ tool modules, batch pipeline, quality gates, and comprehensive documentation.
+
+**Status:** Pre-release (alpha). Not yet published to PyPI. Requires Python 3.10+.
 
 ---
 
@@ -60,8 +62,8 @@ It's not another chatbot. It's **infrastructure** — the layer between your cod
 - **Files Changed:** 132
 - **Additions:** +36,106 lines
 - **Deletions:** -101 lines
-- **Author:** cyberkrunk69
-- **Branch:** `tech-debt-sprint` → `main`
+- **Python Requirement:** 3.10+
+- **PyPI Status:** Not yet published (alpha)
 
 ---
 
