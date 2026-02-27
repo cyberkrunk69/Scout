@@ -1,8 +1,6 @@
 # Autonomous Execution at Any Budget: How Scout Actually Works
 
-Your tweet sparked some skepticism: *"Do the whole thing, make no mistakes. Add call-chain / index based SOT docs when ur done. Add any friction points or bugs found along the way to gh issues and you have a budget of $0.10. Go!"*
-
-This isn't marketing. This is the actual architecture.
+*$scout "Do the whole thing, make no mistakes. Add call-chain / index based SOT docs when ur done. Add any friction points or bugs found along the way to gh issues and you have a budget of $0.10. Go!"*
 
 ---
 
