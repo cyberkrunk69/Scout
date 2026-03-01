@@ -2,6 +2,8 @@
 
 *$scout "Do the whole thing, make no mistakes. Add call-chain / index based SOT docs when ur done. Add any friction points or bugs found along the way to gh issues and you have a budget of $0.10. Go!"*
 
+"Scout builds Subtext. Subtext builds understanding. Understanding builds better software."
+
 [How this is possible](https://github.com/cyberkrunk69/Scout/blob/main/docs/guides/autonomous_execution_at_any_budget.md)
 
 [![License](https://img.shields.io/pypi/l/scout-core.svg)](https://github.com/cyberkrunk69/Scout/blob/main/LICENSE)
